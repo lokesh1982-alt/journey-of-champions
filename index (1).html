@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teach-E Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#6d28d9;min-height:100vh;padding:12px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#w{display:flex;flex-direction:column;gap:12px;max-width:480px;margin:0 auto}
+h1{color:#fff;text-align:center;font-size:20px;font-weight:800;padding:8px 0 2px}
+h1 span{display:block;font-size:12px;font-weight:400;opacity:.8;margin-top:2px}
+.board{background:#1a5c3a;border-radius:14px;padding:14px;border:3px solid #0d3d26}
+.blbl{font-size:11px;font-weight:700;color:#86efac;margin-bottom:6px;letter-spacing:.6px;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:#86efac;animation:blink 1s infinite}
+#btext{font-size:13px;color:#f0fdf4;line-height:1.7;min-height:48px}
+.chars{display:flex;justify-content:center;align-items:flex-end;gap:14px;padding:8px 0}
+.cw{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cn{font-size:11px;font-weight:700;color:#fff}
+.cs{animation:bob 2.5s ease-in-out infinite}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;border:none;border-radius:50px;padding:15px 8px;font-size:15px;font-weight:800;color:#fff;text-align:center;cursor:pointer;-webkit-appearance:none;appearance:none}
+.btn:active{opacity:.7;transform:scale(.97)}
+.bp{background:#7c3aed}.ba{background:#f59e0b}.bb{background:#3b82f6}.bk{background:#ec4899}
+.card{background:#fff;border-radius:14px;padding:14px;animation:fade .35s ease both;margin-top:4px}
+.ch{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;margin-bottom:10px}
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ct{font-size:15px;font-weight:700}.csu{font-size:11px;color:#888}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.st{background:#f9fafb;border-radius:8px;padding:8px;text-align:center}
+.sv{font-size:18px;font-weight:700}.sl{font-size:10px;color:#aaa;margin-top:2px}
+.sec{font-size:12px;font-weight:700;color:#222;margin-bottom:6px}
+.its{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.ig{font-size:12px;padding:7px 10px;border-radius:8px;display:flex;gap:7px;line-height:1.45;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;animation:pop .3s ease both}
+.ib{font-size:12px;padding:7px 10px;border-radius:8px;display:flex;gap:7px;line-height:1.45;background:#fefce8;color:#854d0e;border:1px solid #fde68a;animation:pop .3s ease both}
+.pr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pl{font-size:11px;color:#666;width:82px;flex-shrink:0}
+.pb{flex:1;background:#f3f4f6;border-radius:50px;height:7px;overflow:hidden}
+.pf{height:100%;border-radius:50px;width:0;transition:width 1.3s ease}
+.pp{font-size:11px;font-weight:700;width:30px;text-align:right}
+.gb{background:#fef9ec;border:2px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:12px;color:#78350f;line-height:1.6}
+.gb b{display:block;font-size:13px;margin-bottom:3px;color:#451a03}
+.speakbtn{width:100%;border:none;border-radius:50px;padding:11px 8px;font-size:13px;font-weight:700;color:#fff;background:#059669;cursor:pointer;margin-top:8px;-webkit-appearance:none}
+.speakbtn:active{opacity:.7}
+</style>
+</head>
+<body>
+<div id="w">
+  <h1>🌟 Vacation Achievement Report<span>by Teach-E, your cartoon teacher!</span></h1>
+
+  <div class="board">
+    <div class="blbl"><span class="dot"></span>TEACH-E SAYS</div>
+    <div id="btext">Tap a button below to see Teach-E's message! 👇</div>
+    <button class="speakbtn" id="speakbtn" style="display:none">🔊 Tap to Hear This Message</button>
+  </div>
+
+  <div class="chars">
+    <div class="cw">
+      <svg class="cs" width="52" height="70" viewBox="0 0 52 70">
+        <circle cx="26" cy="20" r="16" fill="#FBBF24"/>
+        <ellipse cx="20" cy="18" rx="2.5" ry="2.5" fill="#1f2937"/>
+        <ellipse cx="32" cy="18" rx="2.5" ry="2.5" fill="#1f2937"/>
+        <circle cx="21" cy="17" r="1" fill="white"/><circle cx="33" cy="17" r="1" fill="white"/>
+        <path d="M20 25 Q26 29 32 25" stroke="#1f2937" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <rect x="10" y="34" width="32" height="24" rx="6" fill="#3b82f6"/>
+        <text x="26" y="49" text-anchor="middle" font-size="9" fill="white" font-weight="700">D</text>
+        <rect x="15" y="58" width="8" height="11" rx="3" fill="#FBBF24"/>
+        <rect x="29" y="58" width="8" height="11" rx="3" fill="#FBBF24"/>
+        <rect x="3" y="36" width="9" height="16" rx="4" fill="#FBBF24"/>
+        <rect x="40" y="36" width="9" height="16" rx="4" fill="#FBBF24"/>
+      </svg>
+      <div class="cn">Dhruv 🐯</div>
+    </div>
+    <div class="cw">
+      <svg class="cs" style="animation-delay:.4s" width="64" height="88" viewBox="0 0 64 88">
+        <circle cx="32" cy="21" r="18" fill="#fde68a"/>
+        <ellipse cx="25" cy="19" rx="3" ry="3" fill="#1f2937"/>
+        <ellipse cx="39" cy="19" rx="3" ry="3" fill="#1f2937"/>
+        <circle cx="26" cy="18" r="1.1" fill="white"/><circle cx="40" cy="18" r="1.1" fill="white"/>
+        <path d="M26 27 Q32 32 38 27" stroke="#f97316" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M14 7 Q32 0 50 7" stroke="#7c3aed" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <rect x="14" y="37" width="36" height="30" rx="7" fill="#7c3aed"/>
+        <text x="32" y="52" text-anchor="middle" font-size="8" fill="white" font-weight="700">TEACH-E</text>
+        <rect x="19" y="67" width="9" height="13" rx="4" fill="#fde68a"/>
+        <rect x="36" y="67" width="9" height="13" rx="4" fill="#fde68a"/>
+        <rect x="3" y="39" width="12" height="22" rx="6" fill="#fde68a"/>
+        <rect x="49" y="39" width="12" height="22" rx="6" fill="#fde68a"/>
+        <rect x="51" y="25" width="4" height="18" rx="2" fill="#fde68a" transform="rotate(-18 53 25)"/>
+        <rect x="55" y="15" width="11" height="14" rx="3" fill="#fef9c3" stroke="#d97706" stroke-width="1"/>
+        <line x1="57" y1="19" x2="64" y2="19" stroke="#374151" stroke-width="1"/>
+        <line x1="57" y1="22" x2="64" y2="22" stroke="#374151" stroke-width="1"/>
+        <line x1="57" y1="25" x2="64" y2="25" stroke="#374151" stroke-width="1"/>
+      </svg>
+      <div class="cn" style="color:#ddd6fe;font-weight:800">Teach-E ✨</div>
+    </div>
+    <div class="cw">
+      <svg class="cs" style="animation-delay:.8s" width="52" height="70" viewBox="0 0 52 70">
+        <path d="M7 7 Q26 1 45 7 Q49 13 45 17 Q26 21 7 17 Q3 13 7 7Z" fill="#ec4899"/>
+        <circle cx="26" cy="20" r="16" fill="#FBBF24"/>
+        <ellipse cx="20" cy="18" rx="2.5" ry="2.5" fill="#1f2937"/>
+        <ellipse cx="32" cy="18" rx="2.5" ry="2.5" fill="#1f2937"/>
+        <circle cx="21" cy="17" r="1" fill="white"/><circle cx="33" cy="17" r="1" fill="white"/>
+        <path d="M20 25 Q26 29 32 25" stroke="#1f2937" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <rect x="10" y="34" width="32" height="24" rx="6" fill="#ec4899"/>
+        <text x="26" y="49" text-anchor="middle" font-size="9" fill="white" font-weight="700">V</text>
+        <rect x="15" y="58" width="8" height="11" rx="3" fill="#FBBF24"/>
+        <rect x="29" y="58" width="8" height="11" rx="3" fill="#FBBF24"/>
+        <rect x="3" y="36" width="9" height="16" rx="4" fill="#FBBF24"/>
+        <rect x="40" y="36" width="9" height="16" rx="4" fill="#FBBF24"/>
+      </svg>
+      <div class="cn">Vedika 🐼</div>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="btn bp" id="bi">▶ Intro</button>
+    <button class="btn ba" id="bg">🎯 Goals</button>
+    <button class="btn bb" id="bd">🐯 Dhruv</button>
+    <button class="btn bk" id="bv">🐼 Vedika</button>
+  </div>
+
+  <div id="ra"></div>
+</div>
+
+<script>
+var currentText = '';
+
+var msgs = {
+  intro: "Hello Dhruv and Vedika! I am Teach-E, your vacation champion! This week both of you have done wonderful things! Dhruv earned Rs.107 and Vedika earned Rs.114 — and you BOTH saved every single rupee! Tap Dhruv or Vedika below to see your personal report card!",
+  goal: "Why setting a savings goal matters! When you have a goal — like saving Rs.500 for something special — every rupee you earn has a PURPOSE! It teaches you patience, because good things are worth waiting for. It teaches you maths, because you count and plan. The happiness of buying something with YOUR OWN money is 10 times better than receiving it as a gift! Go to the Savings tab, tap Edit, and write your dream goal TODAY!"
+};
+
+var kd = {
+  dhruv:{col:'#3b82f6',bg:'#eff6ff',em:'🐯',lbl:"Dhruv's Report",earned:107,saved:107,
+    msg:"Dhruv, you champion! You earned Rs.107 and saved ALL of it! You woke up on time, exercised, helped at home every day, and had breakfast without TV! For next week: try 15 minutes of learning daily, say please and thank you every day, and SET A SAVINGS GOAL! You are a tiger — ROAR!",
+    good:[['✅','Woke up on time — Tue and Wed!'],['🏠','Helped at home — 3 days!'],['🍳','Breakfast without TV — 3 days!'],['🏃','Exercise and outdoor sports done!'],['💰','Saved 100% of earnings — Rs.107!']],
+    grow:[['📚','Learning time skipped — try 15 min daily!'],['🙏','Say please and thank you every day!'],['🎨','Creative activity often missed!'],['🎯','No savings goal yet — write one today!']],
+    prog:[['Daily habits',65,'#3b82f6'],['Kindness',55,'#10b981'],['Savings',100,'#f59e0b']]},
+  vedika:{col:'#ec4899',bg:'#fdf2f8',em:'🐼',lbl:"Vedika's Report",earned:114,saved:114,
+    msg:"Vedika, superstar! You earned Rs.114 — the highest this week — and saved every single rupee! Creative activities, helping with lunch, special time with Mummy, and saying please and thank you — wonderful! For next week: go outside for sports every day, keep up learning time, and SET A SAVINGS GOAL! You are a shining star!",
+    good:[['✅','Woke up on time — Tue and Wed!'],['🎨','Creative activity — 2 days!'],['🍱','Lunch on time and helped clear!'],['💝','Special time with Mummy!'],['🙏','Said please and thank you daily!'],['💰','Saved 100% of earnings — Rs.114!']],
+    grow:[['🏃','Outdoor sports missed — go outside daily!'],['📚','Learning time skipped some days!'],['😤','A few tantrums — deep breaths help!'],['🎯','No savings goal yet — write one today!']],
+    prog:[['Daily habits',75,'#ec4899'],['Kindness',90,'#10b981'],['Savings',100,'#f59e0b']]}
+};
+
+function speakText(txt) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(txt);
+  u.rate = 0.9; u.pitch = 1.1; u.volume = 1;
+  var voices = window.speechSynthesis.getVoices();
+  for (var i = 0; i < voices.length; i++) {
+    if (voices[i].lang.indexOf('en') === 0) { u.voice = voices[i]; break; }
+  }
+  window.speechSynthesis.speak(u);
+}
+
+function setBoard(txt, htmlTxt) {
+  currentText = txt;
+  document.getElementById('btext').innerHTML = htmlTxt || txt.replace(/\n/g,'<br>');
+  document.getElementById('speakbtn').style.display = 'block';
+}
+
+document.getElementById('speakbtn').addEventListener('click', function() {
+  speakText(currentText);
+});
+
+function showKid(k) {
+  var d = kd[k];
+  setBoard(d.msg);
+  var g = d.good.map(function(x,i){return '<div class="ig" style="animation-delay:'+(.06*i)+'s"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>';}).join('');
+  var b = d.grow.map(function(x,i){return '<div class="ib" style="animation-delay:'+(.06*i)+'s"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>';}).join('');
+  var p = d.prog.map(function(x){return '<div class="pr"><div class="pl">'+x[0]+'</div><div class="pb"><div class="pf" data-w="'+x[1]+'%" style="background:'+x[2]+'"></div></div><div class="pp" style="color:'+x[2]+'">'+x[1]+'%</div></div>';}).join('');
+  var ra = document.getElementById('ra');
+  ra.innerHTML = '<div class="card"><div class="ch"><div class="av" style="background:'+d.bg+'">'+d.em+'</div><div><div class="ct" style="color:'+d.col+'">'+d.lbl+'</div><div class="csu">18 May – 24 May 2026</div></div></div><div class="sg"><div class="st"><div class="sv" style="color:#10b981">Rs.'+d.earned+'</div><div class="sl">Earned</div></div><div class="st"><div class="sv" style="color:'+d.col+'">Rs.'+d.saved+'</div><div class="sl">Saved</div></div></div>'+p+'<div style="margin-top:10px"><div class="sec">🌟 Amazing achievements</div><div class="its">'+g+'</div></div><div><div class="sec">📈 Room to grow next week</div><div class="its">'+b+'</div></div><div class="gb"><b>🎯 Why set a savings goal?</b>Open Savings tab → tap Edit → write what you are saving for! Watching your money grow toward a dream feels incredible! 🚀</div></div>';
+  setTimeout(function(){
+    ra.querySelectorAll('.pf').forEach(function(el){ el.style.width = el.getAttribute('data-w'); });
+  }, 100);
+  ra.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.getElementById('bi').addEventListener('click', function(){ setBoard(msgs.intro); });
+document.getElementById('bg').addEventListener('click', function(){ setBoard(msgs.goal); });
+document.getElementById('bd').addEventListener('click', function(){ showKid('dhruv'); });
+document.getElementById('bv').addEventListener('click', function(){ showKid('vedika'); });
+
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
+  window.speechSynthesis.getVoices();
+}
+</script>
+</body>
+</html>
