@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey of Champions — Dhruv & Vedika</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--purple:#6d28d9;--purple-light:#ede9fe;--blue:#3b82f6;--blue-light:#dbeafe;--pink:#ec4899;--pink-light:#fce7f3;--green:#059669;--green-light:#d1fae5;--amber:#f59e0b;--amber-light:#fef3c7;--red:#ef4444;--gray:#6b7280;--bg:#f5f3ff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:#1f2937}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes coin{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-60px) scale(0);opacity:0}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(-120px) rotate(720deg);opacity:0}}
+@keyframes celebrate-pop{0%{transform:translate(-50%,-50%) scale(0)}60%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}}
+.screen{display:none;min-height:100vh}.screen.active{display:block}
+/* LOGIN */
+.login-screen{background:linear-gradient(135deg,#6d28d9,#4f46e5,#7c3aed);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.login-box{background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .3s ease}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo h1{font-size:22px;font-weight:900;color:#1f2937;margin-top:8px}
+.login-logo p{font-size:12px;color:#9ca3af;margin-top:3px}
+.login-tabs{display:flex;background:#f3f4f6;border-radius:10px;padding:3px;margin-bottom:18px;gap:3px}
+.login-tab{flex:1;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:#6b7280}
+.login-tab.active{background:#fff;color:var(--purple);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-size:14px;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--purple)}
+.login-btn{width:100%;border:none;border-radius:50px;padding:14px;font-size:15px;font-weight:800;color:#fff;background:var(--purple);cursor:pointer;margin-top:4px}
+.login-btn:active{opacity:.85}
+.login-err{background:#fee2e2;color:#991b1b;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px;display:none}
+.login-info{background:#ede9fe;color:#5b21b6;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px;text-align:center}
+/* LOADING */
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px}
+.spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
+/* APP */
+.app{max-width:900px;margin:0 auto;padding:12px}
+.hidden{display:none!important}
+/* HEADER */
+.header{background:var(--purple);border-radius:16px;padding:14px 16px;margin-bottom:14px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header-left h1{font-size:17px;font-weight:800}
+.header-left .sub-names{font-size:15px;font-weight:900;margin-top:2px}
+.header-left .sub-tagline{font-size:10px;opacity:.75;margin-top:1px}
+.header-right{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.mode-toggle{display:flex;gap:5px}
+.mode-btn{border:2px solid rgba(255,255,255,.4);border-radius:50px;padding:5px 12px;font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:#fff;color:var(--purple)}
+.header-row2{display:flex;gap:5px;align-items:center}
+.lang-btn{border:1.5px solid rgba(255,255,255,.4);border-radius:50px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer}
+.lang-btn.active{background:rgba(255,255,255,.2)}
+.user-pill{background:rgba(255,255,255,.2);border-radius:50px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;cursor:pointer}
+/* NAV */
+.nav-tabs{display:flex;gap:5px;margin-bottom:14px;background:#fff;border-radius:14px;padding:5px;border:1px solid #e5e7eb}
+.nav-tab{flex:1;border:none;border-radius:10px;padding:8px 4px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;color:#6b7280;background:transparent}
+.nav-tab.active{color:#fff;background:var(--purple)}
+/* KID CARDS */
+.kids-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kid-card{background:#fff;border-radius:14px;padding:12px;border:2px solid transparent;cursor:pointer;transition:all .2s}
+.kid-card.active-dhruv{border-color:var(--blue);box-shadow:0 4px 14px rgba(59,130,246,.15)}
+.kid-card.active-vedika{border-color:var(--pink);box-shadow:0 4px 14px rgba(236,72,153,.15)}
+.kid-card:active{transform:scale(.98)}
+.kid-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.kid-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;animation:bob 3s ease-in-out infinite;flex-shrink:0}
+.kid-name{font-size:22px;font-weight:900;color:#111}
+.kid-sub{font-size:10px;color:var(--gray);margin-top:1px}
+.kid-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.stat-box{background:#f9fafb;border-radius:7px;padding:5px;text-align:center}
+.stat-val{font-size:14px;font-weight:800}
+.stat-lbl{font-size:9px;color:var(--gray);margin-top:1px}
+.task-ring{display:flex;align-items:center;gap:5px;margin-top:5px;padding:4px 7px;background:#f9fafb;border-radius:7px}
+.task-ring-bar{flex:1;background:#e5e7eb;border-radius:50px;height:5px;overflow:hidden}
+.task-ring-fill{height:100%;border-radius:50px;transition:width .8s ease}
+.task-ring-lbl{font-size:9px;font-weight:700;white-space:nowrap}
+.goal-bar-wrap{margin-top:6px}
+.goal-lbl{font-size:9px;color:var(--gray);margin-bottom:2px;display:flex;justify-content:space-between}
+.goal-bg{background:#f3f4f6;border-radius:50px;height:5px;overflow:hidden}
+.goal-fill{height:100%;border-radius:50px;transition:width 1s ease}
+/* SECTION */
+.section-card{background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:12px}
+.section-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:12px;font-weight:800;color:#fff}
+.section-sub{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
+.section-body{padding:10px 14px}
+.content{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.content{grid-template-columns:1fr 1fr}}
+/* TASKS */
+.task-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;transition:opacity .2s}
+.task-item:last-child{border-bottom:none}
+.task-item.done{opacity:.5}
+.task-check{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:12px;cursor:pointer}
+.task-check.checked{border-color:var(--green);background:var(--green);color:#fff}
+.task-info{flex:1;cursor:pointer}
+.task-name{font-size:12px;font-weight:600;color:#111}
+.task-name-hi{font-size:10px;color:var(--gray);margin-top:1px}
+.task-time{font-size:10px;color:var(--purple);font-weight:700;margin-top:1px}
+.task-amount{font-size:11px;font-weight:700;color:var(--green);background:var(--green-light);padding:2px 7px;border-radius:50px;flex-shrink:0}
+.task-actions{display:flex;gap:3px;flex-shrink:0}
+.task-act-btn{width:24px;height:24px;border-radius:6px;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* DAYS */
+.days-row{display:flex;gap:3px}
+.day-btn{flex:1;border:none;border-radius:7px;padding:5px 2px;font-size:9px;font-weight:700;cursor:pointer;transition:all .2s}
+.day-btn.active{color:#fff}
+.day-btn:not(.active){background:#f3f4f6;color:#6b7280}
+/* SUMMARY */
+.summary-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:12px}
+.summary-row:last-child{border-bottom:none}
+/* BADGES */
+.badge-row{display:flex;flex-wrap:wrap;gap:5px}
+.badge{padding:3px 9px;border-radius:50px;font-size:10px;font-weight:700}
+/* LEVEL */
+.level-bar-bg{background:#f3f4f6;border-radius:50px;height:8px;overflow:hidden;margin:5px 0}
+.level-bar-fill{height:100%;border-radius:50px;transition:width 1s ease}
+/* GOAL */
+.goal-card{background:var(--amber-light);border-radius:10px;padding:10px;border:1.5px solid var(--amber)}
+.goal-progress-big{background:#fff;border-radius:50px;height:10px;overflow:hidden;margin:6px 0}
+.goal-progress-fill{height:100%;border-radius:50px;background:var(--amber);transition:width 1.2s ease}
+/* BUTTONS */
+.btn{border:none;border-radius:50px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;-webkit-appearance:none}
+.btn:active{transform:scale(.97);opacity:.85}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-outline{background:transparent;border:2px solid #e5e7eb;color:#374151}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-red{background:var(--red);color:#fff}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal{background:#fff;border-radius:18px;padding:20px;width:100%;max-width:380px;animation:pop .25s ease;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:15px;font-weight:800;margin-bottom:14px;color:#111}
+.input-group{margin-bottom:11px}
+.input-group label{font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px}
+.input-group input,.input-group select{width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;outline:none}
+.input-group input:focus{border-color:var(--purple)}
+.modal-btns{display:flex;gap:8px;margin-top:12px}
+.modal-btns .btn{flex:1}
+/* MISC */
+.coin-pop{position:fixed;pointer-events:none;font-size:18px;animation:coin .7s ease forwards;z-index:200}
+.confetti-piece{position:fixed;width:10px;height:10px;border-radius:2px;pointer-events:none;animation:confetti .9s ease forwards;z-index:500}
+.celebrate-msg{position:fixed;top:50%;left:50%;background:#fff;border-radius:20px;padding:24px 32px;text-align:center;z-index:400;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:celebrate-pop .4s ease}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;z-index:300;animation:fade .3s ease;white-space:nowrap}
+.photo-grid-files{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px}
+.file-thumb{cursor:pointer;border-radius:9px;border:1px solid #e5e7eb;overflow:hidden;background:#f9fafb}
+.file-thumb:active{opacity:.7}
+/* REPORT */
+.rpt-page{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:14px}
+.rpt-cover{background:var(--purple);padding:28px 20px;color:#fff;text-align:center}
+.rpt-cover h2{font-size:22px;font-weight:900;margin-bottom:3px}
+.rpt-cover .week-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:50px;padding:4px 14px;font-size:11px;font-weight:700;margin-top:8px}
+.rpt-summary-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #f3f4f6}
+.rpt-kid-col{padding:16px;border-right:1px solid #f3f4f6}
+.rpt-kid-col:last-child{border-right:none}
+.rpt-kid-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid}
+.rpt-4stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.rpt-stat{border-radius:8px;padding:8px;text-align:center}
+.rpt-stat-v{font-size:17px;font-weight:900}
+.rpt-stat-l{font-size:9px;margin-top:2px;opacity:.75;font-weight:600}
+.rpt-bars{display:flex;align-items:flex-end;gap:4px;height:60px;border-bottom:2px solid #f3f4f6;margin-bottom:4px}
+.rpt-bar-w{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rpt-bar-b{width:100%;border-radius:3px 3px 0 0;min-height:3px}
+.rpt-bar-lbl{font-size:7px;font-weight:700;color:#9ca3af;margin-top:2px}
+.rpt-goal-bar{background:#f3f4f6;border-radius:50px;height:8px;overflow:hidden;margin:5px 0}
+.rpt-goal-fill{height:100%;border-radius:50px}
+.rpt-chip-g{display:inline-block;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:600;margin:2px}
+.rpt-chip-i{display:inline-block;background:#fefce8;color:#854d0e;border:1px solid #fde68a;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:600;margin:2px}
+.rpt-footer{background:#f9fafb;padding:10px 16px;text-align:center;font-size:10px;color:#9ca3af;border-top:1px solid #f3f4f6}
+.rpt-detail-page{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:14px}
+.dl-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 0 14px}
+/* USERS */
+.user-list-item{display:flex;align-items:center;gap:10px;padding:10px;background:#f9fafb;border-radius:10px;margin-bottom:8px;border:1px solid #e5e7eb}
+.role-badge{padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="screen-loading" class="screen active">
+  <div class="loader"><div style="font-size:48px">🏆</div><div class="spinner"></div><div style="font-size:14px;color:#6b7280;font-weight:600">Loading Journey of Champions...</div></div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen">
+  <div class="login-screen">
+    <div class="login-box">
+      <div class="login-logo"><div style="font-size:44px">🏆</div><h1>Journey of Champions</h1><p>Dhruv & Vedika · Earn · Save · Grow · Shine</p></div>
+      <div id="login-err" class="login-err"></div>
+      <div class="login-tabs">
+        <button class="login-tab active" onclick="switchLoginTab('login')">Sign In</button>
+        <button class="login-tab" onclick="switchLoginTab('register')">Create Account</button>
+      </div>
+      <div id="form-login">
+        <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com" autocomplete="email"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Your password" autocomplete="current-password"></div>
+        <button class="login-btn" onclick="doLogin()">Sign In →</button>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:#7c3aed;cursor:pointer;font-weight:600" onclick="showForgotForm()">🔑 Forgot password?</div>
+        <div style="text-align:center;margin-top:6px;font-size:11px;color:#9ca3af">First time? Ask Admin to create your account</div>
+      </div>
+      <!-- FORGOT PASSWORD FORM -->
+      <div id="form-forgot" style="display:none">
+        <div style="font-size:13px;color:#374151;margin-bottom:14px;text-align:center">Enter your email and we'll send a reset link 📧</div>
+        <div class="form-group"><label>Your Email</label><input type="email" id="forgot-email" placeholder="your@email.com" autocomplete="email"></div>
+        <button class="login-btn" onclick="doForgotPassword()">Send Reset Email →</button>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:#7c3aed;cursor:pointer;font-weight:600" onclick="showForgotForm(false)">← Back to Sign In</div>
+      </div>
+      <div id="form-register" style="display:none">
+        <div class="login-info">👑 First account becomes Admin</div>
+        <div class="form-group"><label>Your Name</label><input type="text" id="reg-name" placeholder="e.g. Papa, Mummy..."></div>
+        <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="your@email.com"></div>
+        <div class="form-group"><label>Password (min 6 chars)</label><input type="password" id="reg-password" placeholder="Create password"></div>
+        <button class="login-btn" style="background:var(--green)" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="screen-app" class="screen">
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>🏆 Journey of Champions</h1>
+      <div class="sub-names">Dhruv & Vedika</div>
+      <div class="sub-tagline">Earn · Save · Grow · Shine</div>
+    </div>
+    <div class="header-right">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-vacation" onclick="setMode('vacation')">🌴 Vacation</button>
+        <button class="mode-btn" id="mode-school" onclick="setMode('school')">📚 School</button>
+      </div>
+      <div class="header-row2">
+        <button class="lang-btn active" id="lang-en" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" id="lang-hi" onclick="setLang('hi')">हिं</button>
+        <div class="user-pill" onclick="showUserMenu()" id="user-pill">👤 Me ▾</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-home" onclick="switchTab('home')">🏠 Home</button>
+    <button class="nav-tab" id="tab-photos" onclick="switchTab('photos')">📁 Files</button>
+    <button class="nav-tab" id="tab-report" onclick="switchTab('report')">📊 Report</button>
+    <button class="nav-tab" id="tab-admin" onclick="switchTab('admin')" style="display:none">⚙️ Admin</button>
+  </div>
+
+  <!-- HOME -->
+  <div id="view-home">
+    <div class="kids-row">
+      <div class="kid-card active-dhruv" id="card-dhruv" onclick="selectKid('dhruv')">
+        <div class="kid-top"><div class="kid-avatar" style="background:#dbeafe">🐯</div><div><div class="kid-name">Dhruv</div><div class="kid-sub" id="dhruv-mode-lbl">Vacation</div></div></div>
+        <div class="kid-stats">
+          <div class="stat-box"><div class="stat-val" style="color:var(--green)" id="dhruv-earned">₹0</div><div class="stat-lbl">This Week</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--blue)" id="dhruv-saved">₹0</div><div class="stat-lbl">Saved</div></div>
+        </div>
+        <div class="task-ring"><div class="task-ring-bar"><div class="task-ring-fill" id="dhruv-task-fill" style="width:0%;background:var(--blue)"></div></div><div class="task-ring-lbl" id="dhruv-task-lbl" style="color:var(--blue)">0/0</div></div>
+        <div class="goal-bar-wrap"><div class="goal-lbl"><span>Goal</span><span id="dhruv-goal-pct">0%</span></div><div class="goal-bg"><div class="goal-fill" id="dhruv-goal-bar" style="width:0%;background:var(--blue)"></div></div></div>
+      </div>
+      <div class="kid-card" id="card-vedika" onclick="selectKid('vedika')">
+        <div class="kid-top"><div class="kid-avatar" style="background:var(--pink-light);animation-delay:.5s">🐼</div><div><div class="kid-name">Vedika</div><div class="kid-sub" id="vedika-mode-lbl">Vacation</div></div></div>
+        <div class="kid-stats">
+          <div class="stat-box"><div class="stat-val" style="color:var(--green)" id="vedika-earned">₹0</div><div class="stat-lbl">This Week</div></div>
+          <div class="stat-box"><div class="stat-val" style="color:var(--pink)" id="vedika-saved">₹0</div><div class="stat-lbl">Saved</div></div>
+        </div>
+        <div class="task-ring"><div class="task-ring-bar"><div class="task-ring-fill" id="vedika-task-fill" style="width:0%;background:var(--pink)"></div></div><div class="task-ring-lbl" id="vedika-task-lbl" style="color:var(--pink)">0/0</div></div>
+        <div class="goal-bar-wrap"><div class="goal-lbl"><span>Goal</span><span id="vedika-goal-pct">0%</span></div><div class="goal-bg"><div class="goal-fill" id="vedika-goal-bar" style="width:0%;background:var(--pink)"></div></div></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head" style="background:var(--purple)">
+        <div style="display:flex;align-items:center;gap:7px">
+          <button onclick="changeWeek(-1)" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:26px;height:26px;color:#fff;font-size:14px;cursor:pointer">‹</button>
+          <div><div class="section-title">Select Day</div><div class="section-sub" id="week-label">This week</div></div>
+          <button onclick="changeWeek(1)" id="week-next-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:26px;height:26px;color:#fff;font-size:14px;cursor:pointer;opacity:.3">›</button>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:#fff" id="today-earned-lbl">₹0</div>
+      </div>
+      <div class="section-body" style="padding:8px 12px"><div class="days-row" id="days-row"></div></div>
+    </div>
+
+    <div class="content">
+      <div class="section-card">
+        <div class="section-head" id="tasks-head" style="background:var(--blue)">
+          <div><div class="section-title" id="tasks-title">Dhruv's Tasks</div><div class="section-sub" id="tasks-sub">Tap to complete</div></div>
+          <button class="btn btn-sm" id="add-task-btn" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="openAddTask()">+ Add</button>
+        </div>
+        <div class="section-body" id="task-list"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="section-card">
+          <div class="section-head" style="background:var(--amber)">
+            <div><div class="section-title">Savings Goal</div><div class="section-sub" id="goal-kid-lbl">Dhruv</div></div>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openGoalModal()">✏️ Edit</button>
+          </div>
+          <div class="section-body"><div id="goal-display"></div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head" style="background:var(--green)">
+            <div><div class="section-title">Weekly Summary</div><div class="section-sub" id="summary-kid-lbl">Dhruv</div></div>
+            <button class="btn btn-sm" id="spend-btn" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openSpendModal()">💸 Spent</button>
+          </div>
+          <div class="section-body" id="summary-body"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">
+            <div><div class="section-title">Level & Streak</div><div class="section-sub" id="level-kid-lbl">Dhruv</div></div>
+            <div id="streak-badge" style="background:rgba(255,255,255,.2);border-radius:50px;padding:3px 9px;font-size:11px;font-weight:800;color:#fff"></div>
+          </div>
+          <div class="section-body" id="level-display"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-head" style="background:var(--amber)">
+            <div><div class="section-title">Badges Earned</div></div>
+            <button class="btn btn-sm" id="bonus-btn" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openBonusModal()">🎁 Bonus</button>
+          </div>
+          <div class="section-body"><div class="badge-row" id="badges-display"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILES -->
+  <div id="view-photos" class="hidden">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn" id="pkid-dhruv" style="flex:1;background:var(--blue);color:#fff" onclick="setPhotoKid('dhruv')">🐯 Dhruv</button>
+      <button class="btn" id="pkid-vedika" style="flex:1;background:#e5e7eb;color:#374151" onclick="setPhotoKid('vedika')">🐼 Vedika</button>
+    </div>
+    <div class="section-card">
+      <div class="section-head" style="background:var(--purple)">
+        <div><div class="section-title">📁 Folders</div><div class="section-sub" id="folder-kid-lbl">Dhruv</div></div>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openNewFolder()">+ New</button>
+      </div>
+      <div class="section-body" style="padding:10px 12px"><div id="folder-bar" style="display:flex;flex-wrap:wrap;gap:7px"></div></div>
+    </div>
+    <div class="section-card">
+      <div class="section-head" id="files-head" style="background:var(--pink)">
+        <div><div class="section-title" id="files-folder-title">📸 Daily Memories</div><div class="section-sub" id="files-count">0 items</div></div>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="document.getElementById('file-input').click()">+ Upload</button>
+          <button class="btn btn-sm" style="background:rgba(200,0,0,.35);color:#fff;border:none" id="del-folder-btn" onclick="deleteCurrentFolder()">🗑️</button>
+        </div>
+      </div>
+      <div class="section-body" id="files-grid"></div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div id="view-report" class="hidden">
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+      <button onclick="changeReportWeek(-1)" style="background:var(--purple-light);border:none;border-radius:50%;width:30px;height:30px;color:var(--purple);font-size:15px;cursor:pointer">‹</button>
+      <div style="flex:1;text-align:center"><div style="font-size:13px;font-weight:800;color:#374151" id="report-week-label">This week</div><div style="font-size:10px;color:#9ca3af">Tap arrows for past weeks</div></div>
+      <button onclick="changeReportWeek(1)" id="report-next-btn" style="background:var(--purple-light);border:none;border-radius:50%;width:30px;height:30px;color:var(--purple);font-size:15px;cursor:pointer;opacity:.3">›</button>
+    </div>
+    <div style="background:#1a5c3a;border-radius:12px;padding:12px;margin-bottom:10px;border:3px solid #0d3d26">
+      <div style="font-size:10px;font-weight:700;color:#86efac;margin-bottom:5px">📢 TEACH-E SAYS</div>
+      <div id="teachE-text" style="font-size:12px;color:#f0fdf4;line-height:1.7;min-height:40px">Tap a button to hear Teach-E!</div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button onclick="teachESpeak('dhruv')" style="flex:1;border:none;border-radius:50px;padding:7px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;cursor:pointer">🐯 Dhruv</button>
+        <button onclick="teachESpeak('vedika')" style="flex:1;border:none;border-radius:50px;padding:7px;font-size:11px;font-weight:700;background:#ec4899;color:#fff;cursor:pointer">🐼 Vedika</button>
+        <button onclick="teachESpeak('goal')" style="flex:1;border:none;border-radius:50px;padding:7px;font-size:11px;font-weight:700;background:#f59e0b;color:#fff;cursor:pointer">🎯 Goals</button>
+        <button id="teachE-speak-btn" style="display:none;flex:1;border:none;border-radius:50px;padding:7px;font-size:11px;font-weight:700;background:#059669;color:#fff;cursor:pointer" onclick="speakCurrent()">🔊 Speak</button>
+      </div>
+    </div>
+    <div id="report-content"></div>
+    <div class="dl-btns">
+      <button class="btn btn-purple" onclick="downloadPDF()">📄 PDF</button>
+      <button class="btn" style="background:var(--pink);color:#fff" onclick="downloadJPG()">🖼️ JPG</button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="view-admin" class="hidden">
+    <div class="section-card">
+      <div class="section-head" style="background:var(--purple)">
+        <div><div class="section-title">👑 User Management</div><div class="section-sub">Manage family accounts</div></div>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openAddUserModal()">+ Add User</button>
+      </div>
+      <div class="section-body" id="users-list"></div>
+    </div>
+    <div class="section-card">
+      <div class="section-head" style="background:var(--green)"><div><div class="section-title">⚙️ App Settings</div></div></div>
+      <div class="section-body">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-outline" style="text-align:left;border-radius:10px" onclick="openAddTask()">➕ Add / Edit Tasks</button>
+          <button class="btn btn-outline" style="text-align:left;border-radius:10px" onclick="openBonusModal()">🎁 Give Bonus Reward</button>
+          <button class="btn btn-outline" style="text-align:left;border-radius:10px" onclick="openSpendModal()">💸 Record Spending</button>
+          <button class="btn" style="background:#fee2e2;color:#991b1b;text-align:left;border-radius:10px" onclick="if(confirm('Reset ALL data?')){resetAllData()}">⚠️ Reset All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" multiple style="display:none" onchange="handleFileUpload(event)">
+
+<!-- MODALS -->
+<div class="modal-bg hidden" id="modal-task">
+  <div class="modal">
+    <h2 id="modal-task-title">➕ Add New Task</h2>
+    <input type="hidden" id="edit-task-id">
+    <div class="input-group"><label>Task Name (English)</label><input type="text" id="task-name-en" placeholder="e.g. Morning exercise"></div>
+    <div class="input-group"><label>काम का नाम (हिंदी)</label><input type="text" id="task-name-hi" placeholder="जैसे सुबह व्यायाम"></div>
+    <div class="input-group"><label>Applies to</label><select id="task-kid"><option value="both">Both</option><option value="dhruv">Dhruv only</option><option value="vedika">Vedika only</option></select></div>
+    <div class="input-group"><label>Amount (₹)</label><input type="number" id="task-amount" placeholder="e.g. 10" min="0"></div>
+    <div class="input-group"><label>Time range</label><input type="text" id="task-time" placeholder="e.g. 7:00 AM – 7:45 AM"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-task')">Cancel</button><button class="btn btn-purple" id="save-task-btn" onclick="saveTask()">Save Task</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-goal">
+  <div class="modal">
+    <h2>🎯 Set Savings Goal</h2>
+    <div class="input-group"><label>What are you saving for?</label><input type="text" id="goal-name" placeholder="e.g. New toy, book..."></div>
+    <div class="input-group"><label>Target Amount (₹)</label><input type="number" id="goal-amount" placeholder="e.g. 500" min="1"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-goal')">Cancel</button><button class="btn btn-green" onclick="saveGoal()">Set Goal</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-spend">
+  <div class="modal">
+    <h2>💸 Record Spending</h2>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px" id="spend-kid-lbl"></div>
+    <div class="input-group"><label>Amount spent (₹)</label><input type="number" id="spend-amount" placeholder="e.g. 50" min="0"></div>
+    <div class="input-group"><label>What did they buy?</label><input type="text" id="spend-note" placeholder="e.g. Ice cream..."></div>
+    <div style="background:#fef3c7;border-radius:8px;padding:7px 10px;font-size:11px;color:#92400e;margin-bottom:4px" id="spend-info"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-spend')">Cancel</button><button class="btn btn-green" onclick="saveSpend()">Save</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-bonus">
+  <div class="modal">
+    <h2>🎁 Give Bonus Reward</h2>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px" id="bonus-kid-lbl"></div>
+    <div class="input-group"><label>Bonus Amount (₹)</label><input type="number" id="bonus-amount" placeholder="e.g. 20" min="1"></div>
+    <div class="input-group"><label>Reason</label><input type="text" id="bonus-reason" placeholder="e.g. Helped without being asked!"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-bonus')">Cancel</button><button class="btn" style="background:var(--amber);color:#fff" onclick="saveBonus()">🎁 Give Bonus!</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-folder">
+  <div class="modal">
+    <h2>📁 Create New Folder</h2>
+    <div class="input-group"><label>Folder Name</label><input type="text" id="folder-name-input" placeholder="e.g. Report Cards..."></div>
+    <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Choose icon</label><div id="icon-picker" style="display:flex;flex-wrap:wrap;gap:8px;font-size:22px"></div><input type="hidden" id="folder-icon-selected" value="📁"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-folder')">Cancel</button><button class="btn btn-purple" onclick="saveNewFolder()">Create</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-preview">
+  <div class="modal" style="max-width:440px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div id="preview-title" style="font-size:13px;font-weight:800"></div><button class="btn btn-sm btn-outline" onclick="closeModal('modal-preview')">✕</button></div>
+    <div id="preview-body" style="text-align:center"></div>
+    <div class="modal-btns" style="margin-top:10px"><button class="btn btn-red" id="preview-delete-btn">🗑️ Delete</button><button class="btn btn-outline" id="preview-download-btn">⬇️ Download</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-add-user">
+  <div class="modal">
+    <h2>👤 Add Family Member</h2>
+    <div class="input-group"><label>Full Name</label><input type="text" id="add-user-name" placeholder="e.g. Mummy, Papa, Dhruv..."></div>
+    <div class="input-group"><label>Email</label><input type="email" id="add-user-email" placeholder="their@email.com"></div>
+    <div class="input-group"><label>Password (min 6 chars)</label><input type="password" id="add-user-password" placeholder="Min 6 characters"></div>
+    <div class="input-group"><label>Role</label>
+      <select id="add-user-role">
+        <option value="parent">👨‍👩‍ Parent — manage tasks & rewards</option>
+        <option value="child">🧒 Child — own dashboard only</option>
+        <option value="admin">👑 Admin — full control</option>
+      </select>
+    </div>
+    <div class="input-group"><label>Avatar</label>
+      <select id="add-user-avatar">
+        <option value="👨">👨 Papa</option><option value="👩">👩 Mummy</option>
+        <option value="🐯">🐯 Dhruv</option><option value="🐼">🐼 Vedika</option>
+        <option value="👦">👦 Boy</option><option value="👧">👧 Girl</option>
+      </select>
+    </div>
+    <div class="input-group"><label>Linked kid (for child accounts)</label>
+      <select id="add-user-linked"><option value="">None</option><option value="dhruv">Dhruv</option><option value="vedika">Vedika</option></select>
+    </div>
+    <div id="add-user-err" style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:7px 10px;font-size:12px;margin-bottom:8px;display:none"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-add-user')">Cancel</button><button class="btn btn-purple" onclick="createUser()">Create Account</button></div>
+  </div>
+</div>
+<script>
+// ══════════════════════════════════════
+// FIREBASE CONFIG (Lokesh's project)
+// ══════════════════════════════════════
+var firebaseConfig = {
+  apiKey: "AIzaSyCBVOHYod1Tlyedsjg_ynWqQQ2FciRp1vc",
+  authDomain: "journey-of-champions-2a9b7.firebaseapp.com",
+  projectId: "journey-of-champions-2a9b7",
+  storageBucket: "journey-of-champions-2a9b7.firebasestorage.app",
+  messagingSenderId: "411187899237",
+  appId: "1:411187899237:web:b57d3b5100f97952a08f8c"
+};
+var db, auth, currentUser, currentUserProfile, dataLoaded=false;
+var data = null;
+
+function loadFirebase(cb){
+  var srcs=['https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js','https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js','https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'];
+  var n=0; srcs.forEach(function(src){var s=document.createElement('script');s.src=src;s.onload=function(){n++;if(n===srcs.length)cb();};document.head.appendChild(s);});
+}
+
+function showForgotForm(show){
+  var show=(show===undefined)?true:show;
+  document.getElementById('form-login').style.display=show?'none':'block';
+  document.getElementById('form-forgot').style.display=show?'block':'none';
+  document.getElementById('form-register').style.display='none';
+  document.getElementById('login-err').style.display='none';
+}
+
+loadFirebase(function(){
+  firebase.initializeApp(firebaseConfig);
+  db=firebase.firestore();
+  auth=firebase.auth();
+  // Set persistence to LOCAL so mobile remembers login
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function(){
+    auth.onAuthStateChanged(function(user){
+      clearTimeout(loadingTimer);
+      if(user){
+        currentUser=user;
+        db.collection('users').doc(user.uid).get().then(function(doc){
+          if(doc.exists){currentUserProfile=doc.data();}
+          else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();});
+        }).catch(function(){showScreen('login');showErr('Could not load profile. Try again.');});
+      } else {
+        currentUser=null;currentUserProfile=null;showScreen('login');
+      }
+    });
+  }).catch(function(){
+    // If persistence fails (some browsers), still try normal auth
+    auth.onAuthStateChanged(function(user){
+      clearTimeout(loadingTimer);
+      if(user){
+        currentUser=user;
+        db.collection('users').doc(user.uid).get().then(function(doc){
+          if(doc.exists){currentUserProfile=doc.data();}
+          else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();});
+        }).catch(function(){showScreen('login');});
+      } else {currentUser=null;currentUserProfile=null;showScreen('login');}
+    });
+  });
+});
+
+function showScreen(n){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-'+n).classList.add('active');}
+
+var loadingTimer=null;
+function startLoadingTimeout(){
+  clearTimeout(loadingTimer);
+  loadingTimer=setTimeout(function(){
+    if(document.getElementById('screen-loading').classList.contains('active')){
+      showScreen('login');
+      showErr('Connection timeout. Check internet and try again.');
+    }
+  },10000);
+}
+
+function switchLoginTab(t){
+  document.querySelectorAll('.login-tab').forEach(function(el,i){el.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register'));});
+  document.getElementById('form-login').style.display=t==='login'?'block':'none';
+  document.getElementById('form-register').style.display=t==='register'?'block':'none';
+  var ff=document.getElementById('form-forgot');if(ff)ff.style.display='none';
+  var le=document.getElementById('login-err');le.style.display='none';le.style.background='#fee2e2';le.style.color='#991b1b';
+}
+function showErr(msg){var e=document.getElementById('login-err');e.textContent=msg;e.style.background='#fee2e2';e.style.color='#991b1b';e.style.display='block';}
+function showSuccess(msg){var e=document.getElementById('login-err');e.textContent=msg;e.style.background='#d1fae5';e.style.color='#065f46';e.style.display='block';}
+
+function doLogin(){
+  var em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-password').value;
+  if(!em||!pw){showErr('Please fill all fields');return;}
+  showScreen('loading');
+  startLoadingTimeout();
+  auth.signInWithEmailAndPassword(em,pw).catch(function(e){
+    clearTimeout(loadingTimer);
+    showScreen('login');
+    showErr(e.code==='auth/wrong-password'||e.code==='auth/user-not-found'?'Wrong email or password!':e.code==='auth/network-request-failed'?'No internet. Please check connection.':e.message);
+  });
+}
+function doRegister(){
+  var name=document.getElementById('reg-name').value.trim(),em=document.getElementById('reg-email').value.trim(),pw=document.getElementById('reg-password').value;
+  if(!name||!em||!pw){showErr('Please fill all fields');return;}
+  if(pw.length<6){showErr('Password must be at least 6 characters');return;}
+  showScreen('loading');
+  startLoadingTimeout();
+  auth.createUserWithEmailAndPassword(em,pw).then(function(c){
+    clearTimeout(loadingTimer);
+    return db.collection('users').doc(c.user.uid).set({name:name,email:em,role:'admin',avatar:'👑',linkedKid:'',createdAt:new Date().toISOString()});
+  }).catch(function(e){clearTimeout(loadingTimer);showScreen('login');showErr(e.message);});
+}
+function doForgotPassword(){
+  var em=document.getElementById('forgot-email').value.trim();
+  if(!em){showErr('Please enter your email');return;}
+  auth.sendPasswordResetEmail(em).then(function(){
+    showSuccess('✅ Reset email sent! Check your inbox and spam folder.');
+    setTimeout(function(){
+      var ff=document.getElementById('form-forgot');if(ff)ff.style.display='none';
+      document.getElementById('form-login').style.display='block';
+    },3000);
+  }).catch(function(e){showErr(e.code==='auth/user-not-found'?'No account found with this email.':e.message);});
+}
+function doLogout(){
+  clearTimeout(loadingTimer);
+  auth.signOut().then(function(){data=null;dataLoaded=false;showScreen('login');}).catch(function(){data=null;dataLoaded=false;showScreen('login');});
+}
+
+
+function loadAppData(cb){
+  db.collection('appdata').doc('main').onSnapshot(function(doc){
+    if(doc.exists){
+      data=doc.data();
+      if(!data.tasks){data.tasks={vacation:defVacation(),school:defSchool()};}
+      if(!data.checks){data.checks={dhruv:{},vedika:{}};}
+      if(!data.goals){data.goals={dhruv:{name:'',target:0},vedika:{name:'',target:0}};}
+      if(!data.spent){data.spent={dhruv:0,vedika:0};}
+      if(!data.bonuses){data.bonuses={dhruv:[],vedika:[]};}
+      if(!data.folders){data.folders={dhruv:{},vedika:{}};}
+      if(!data.files){data.files={dhruv:{},vedika:{}};}
+    } else {
+      data={version:4,tasks:{vacation:defVacation(),school:defSchool()},checks:{dhruv:{},vedika:{}},goals:{dhruv:{name:'',target:0},vedika:{name:'',target:0}},spent:{dhruv:0,vedika:0},bonuses:{dhruv:[],vedika:[]},folders:{dhruv:{},vedika:{}},files:{dhruv:{},vedika:{}}};
+      db.collection('appdata').doc('main').set(data);
+    }
+    if(!dataLoaded){dataLoaded=true;if(cb)cb();}else{render();}
+  });
+}
+function saveData(){if(db&&data)db.collection('appdata').doc('main').set(data).catch(function(e){console.error(e);});}
+function resetAllData(){data={version:4,tasks:{vacation:defVacation(),school:defSchool()},checks:{dhruv:{},vedika:{}},goals:{dhruv:{name:'',target:0},vedika:{name:'',target:0}},spent:{dhruv:0,vedika:0},bonuses:{dhruv:[],vedika:[]},folders:{dhruv:{},vedika:{}},files:{dhruv:{},vedika:{}}};saveData();render();showToast('Data reset!');}
+
+function applyRolePermissions(){
+  var p=currentUserProfile||{}, role=p.role||'child';
+  var isAdmin=role==='admin', isParent=role==='parent'||isAdmin, isChild=role==='child';
+  document.getElementById('user-pill').textContent=(p.avatar||'👤')+' '+(p.name||'Me')+' ▾';
+  document.getElementById('tab-admin').style.display=isAdmin?'block':'none';
+  if(isChild&&p.linkedKid){
+    selectedKid=p.linkedKid;
+    ['dhruv','vedika'].forEach(function(k){
+      document.getElementById('card-'+k).style.pointerEvents=p.linkedKid===k?'auto':'none';
+      document.getElementById('card-'+k).style.opacity=p.linkedKid===k?'1':'0.4';
+    });
+  }
+  ['add-task-btn','spend-btn','bonus-btn','del-folder-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isParent?'':'none';});
+  document.getElementById('mode-vacation').style.pointerEvents=isParent?'auto':'none';
+  document.getElementById('mode-school').style.pointerEvents=isParent?'auto':'none';
+}
+
+function showUserMenu(){
+  var p=currentUserProfile||{};
+  var m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:16px';
+  m.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;animation:pop .2s ease">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f3f4f6">'+
+      '<div style="width:48px;height:48px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:24px">'+(p.avatar||'👤')+'</div>'+
+      '<div>'+
+        '<div style="font-size:16px;font-weight:800;color:#111">'+(p.name||'User')+'</div>'+
+        '<div style="font-size:11px;color:#9ca3af">'+(p.role==='admin'?'👑 Admin':p.role==='parent'?'👨‍👩‍ Parent':'🧒 Child')+'</div>'+
+        '<div style="font-size:11px;color:#9ca3af">'+(currentUser&&currentUser.email||'')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<button id="btn-reset-pw" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;text-align:left">🔑 Change Password</button>'+
+    '<button id="btn-sign-out" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:pointer;margin-bottom:8px;text-align:left">🚪 Sign Out</button>'+
+    '<button id="btn-close-menu" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#f3f4f6;color:#374151;cursor:pointer;text-align:left">✕ Close</button>'+
+  '</div>';
+  m.querySelector('#btn-sign-out').onclick=function(){m.remove();doLogout();};
+  m.querySelector('#btn-close-menu').onclick=function(){m.remove();};
+  m.querySelector('#btn-reset-pw').onclick=function(){
+    m.remove();
+    if(!currentUser||!currentUser.email){showToast('No email found!');return;}
+    if(!confirm('Send password reset email to '+currentUser.email+'?'))return;
+    auth.sendPasswordResetEmail(currentUser.email).then(function(){
+      showToast('✅ Reset email sent! Check your inbox.');
+    }).catch(function(e){showToast('Error: '+e.message);});
+  };
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+function renderUsersList(){
+  db.collection('users').get().then(function(snap){
+    var html='';
+    snap.forEach(function(doc){
+      var u=doc.data();
+      var rc=u.role==='admin'?['#ede9fe','#5b21b6']:u.role==='parent'?['#dbeafe','#1d4ed8']:['#d1fae5','#065f46'];
+      html+='<div class="user-list-item"><div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px">'+(u.avatar||'👤')+'</div>'+
+        '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+u.name+'</div><div style="font-size:11px;color:#9ca3af">'+u.email+(u.linkedKid?' · linked: '+u.linkedKid:'')+'</div></div>'+
+        '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑 Admin':u.role==='parent'?'Parent':'🧒 Child')+'</span>'+
+        (doc.id!==currentUser.uid?'<button onclick="deleteUser(\''+doc.id+'\')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>':'')+
+      '</div>';
+    });
+    document.getElementById('users-list').innerHTML=html||'<div style="font-size:12px;color:#9ca3af;padding:8px">No users yet.</div>';
+  });
+}
+
+function openAddUserModal(){
+  ['add-user-name','add-user-email','add-user-password'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('add-user-role').value='parent';
+  document.getElementById('add-user-err').style.display='none';
+  document.getElementById('modal-add-user').classList.remove('hidden');
+}
+
+function createUser(){
+  var name=document.getElementById('add-user-name').value.trim();
+  var email=document.getElementById('add-user-email').value.trim();
+  var pass=document.getElementById('add-user-password').value;
+  var role=document.getElementById('add-user-role').value;
+  var avatar=document.getElementById('add-user-avatar').value;
+  var linked=document.getElementById('add-user-linked').value;
+  var errEl=document.getElementById('add-user-err');
+  if(!name||!email||!pass){errEl.textContent='Fill all fields';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='Password min 6 chars';errEl.style.display='block';return;}
+  var secondary;
+  try{secondary=firebase.app('secondary');}catch(e){secondary=firebase.initializeApp(firebaseConfig,'secondary');}
+  secondary.auth().createUserWithEmailAndPassword(email,pass).then(function(cred){
+    return db.collection('users').doc(cred.user.uid).set({name:name,email:email,role:role,avatar:avatar,linkedKid:linked,createdAt:new Date().toISOString(),createdBy:currentUser.uid});
+  }).then(function(){secondary.auth().signOut();closeModal('modal-add-user');showToast('Account created for '+name+'! ✅');renderUsersList();})
+  .catch(function(e){errEl.textContent=e.message;errEl.style.display='block';});
+}
+
+function deleteUser(uid){if(!confirm('Remove this user?'))return;db.collection('users').doc(uid).delete().then(function(){showToast('User removed!');renderUsersList();});}
+
+// ══ STATE ══
+var lang='en',mode='vacation',selectedKid='dhruv';
+var selectedDay=new Date().getDay();if(selectedDay===0)selectedDay=7;
+var weekOffset=0,reportWeekOffset=0;
+var today=new Date().getDay();if(today===0)today=7;
+var DAYS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var DAYS_HI=['सोम','मंगल','बुध','गुरु','शुक्र','शनि','रवि'];
+
+// ══ HELPERS ══
+function dayKey(kid,day,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-day)+(off*7));return kid+'_'+mode+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function getWeekStartLabel(off){var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-1)+(off*7));var e=new Date(d);e.setDate(d.getDate()+6);var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' – '+e.getDate()+' '+m[e.getMonth()];}
+function getChecks(kid,day,wOff){return(data&&data.checks&&data.checks[kid])?data.checks[kid][dayKey(kid,day,wOff)]||{}:{};}
+function toggleCheck(kid,day,taskId,amount){if(!data)return;var key=dayKey(kid,day,weekOffset);if(!data.checks[kid][key])data.checks[kid][key]={};var was=data.checks[kid][key][taskId];data.checks[kid][key][taskId]=!was;saveData();if(!was){showCoin(amount);setTimeout(function(){checkCelebration(kid);},100);}render();}
+function getEarned(kid,day,wOff){var ch=getChecks(kid,day,wOff);var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});var tot=0;tasks.forEach(function(t){if(ch[t.id])tot+=t.amount;});return tot;}
+function getWeekEarned(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var tot=0;for(var d=1;d<=7;d++)tot+=getEarned(kid,d,off);return tot;}
+function getSpent(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;if(!data)return 0;return off===0?(data.spent[kid]||0):(data['spent_'+kid+'_'+off]||0);}
+function getSaved(kid,wOff){return Math.max(0,getWeekEarned(kid,wOff)-getSpent(kid,wOff));}
+function getGoalPct(kid){if(!data)return 0;var g=data.goals[kid];if(!g||!g.target)return 0;return Math.min(100,Math.round(getSaved(kid)/g.target*100));}
+function getTasks(){return((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===selectedKid;});}
+function showCoin(a){var c=document.createElement('div');c.className='coin-pop';c.textContent='+₹'+a+'💰';c.style.left=(window.innerWidth/2-30)+'px';c.style.top=(window.innerHeight/2)+'px';document.body.appendChild(c);setTimeout(function(){c.remove();},700);}
+function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+
+// ══ RENDER ══
+function render(){
+  if(!data||!document.getElementById('screen-app').classList.contains('active'))return;
+  renderKidCards();renderDays();renderTasks();renderGoal();renderSummary();renderLevel();renderBadges();
+  var colors={dhruv:'var(--blue)',vedika:'var(--pink)'};
+  document.getElementById('tasks-head').style.background=colors[selectedKid];
+  document.getElementById('tasks-title').textContent=selectedKid==='dhruv'?"Dhruv's Tasks":"Vedika's Tasks";
+}
+
+function renderKidCards(){
+  ['dhruv','vedika'].forEach(function(kid){
+    var earned=getWeekEarned(kid),saved=getSaved(kid),pct=getGoalPct(kid);
+    document.getElementById(kid+'-earned').textContent='₹'+earned;
+    document.getElementById(kid+'-saved').textContent='₹'+saved;
+    document.getElementById(kid+'-goal-pct').textContent=pct+'%';
+    setTimeout(function(){document.getElementById(kid+'-goal-bar').style.width=pct+'%';},100);
+    document.getElementById(kid+'-mode-lbl').textContent=mode==='vacation'?'🌴 Vacation':'📚 School';
+    document.getElementById('card-'+kid).className='kid-card'+(kid===selectedKid?' active-'+kid:'');
+    var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
+    var ch=getChecks(kid,weekOffset===0?today:selectedDay,weekOffset);
+    var done=tasks.filter(function(t){return ch[t.id];}).length;
+    var tp=tasks.length>0?Math.round(done/tasks.length*100):0;
+    setTimeout(function(){document.getElementById(kid+'-task-fill').style.width=tp+'%';},100);
+    document.getElementById(kid+'-task-lbl').textContent=done+'/'+tasks.length+' today';
+  });
+  var wl=document.getElementById('week-label');
+  wl.textContent=weekOffset===0?'This week':weekOffset===-1?'Last week':getWeekStartLabel(weekOffset);
+  var nb=document.getElementById('week-next-btn');if(nb)nb.style.opacity=weekOffset>=0?'.3':'1';
+}
+
+function renderDays(){
+  var row=document.getElementById('days-row');
+  var dn=lang==='hi'?DAYS_HI:DAYS_EN;
+  var colors={dhruv:'var(--blue)',vedika:'var(--pink)'};
+  var isPast=weekOffset<0;
+  row.innerHTML=dn.map(function(d,i){
+    var day=i+1,earned=getEarned(selectedKid,day,weekOffset),isActive=day===selectedDay,isFuture=!isPast&&day>today;
+    return '<button class="day-btn'+(isActive?' active':'')+'" onclick="selectDay('+(i+1)+')" style="'+(isActive?'background:'+colors[selectedKid]+';':isFuture?'opacity:.3;':'')+'"><div>'+d+'</div><div style="font-size:8px;margin-top:1px;font-weight:700">₹'+earned+'</div></button>';
+  }).join('');
+  document.getElementById('today-earned-lbl').textContent='₹'+getEarned(selectedKid,selectedDay,weekOffset);
+}
+
+function renderTasks(){
+  var list=document.getElementById('task-list'),tasks=getTasks(),ch=getChecks(selectedKid,selectedDay,weekOffset);
+  var isFuture=weekOffset===0&&selectedDay>today;
+  var isParent=currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  if(tasks.length===0){list.innerHTML='<div style="text-align:center;padding:14px;font-size:12px;color:var(--gray)">No tasks yet. Tap + Add!</div>';return;}
+  list.innerHTML=tasks.map(function(t){
+    var done=!!ch[t.id],timeStr=t.time?'<div class="task-time">⏰ '+t.time+'</div>':'';
+    var fn=isFuture?'showToast(\'Future day!\')':'toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    return '<div class="task-item'+(done?' done':'')+'">'+
+      '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'">'+(done?'✓':'')+'</div>'+
+      '<div class="task-info" onclick="'+fn+'"><div class="task-name">'+t.en+'</div><div class="task-name-hi">'+t.hi+'</div>'+timeStr+'</div>'+
+      '<div class="task-amount">+₹'+t.amount+'</div>'+
+      (isParent?'<div class="task-actions"><button class="task-act-btn" style="background:#ede9fe" onclick="openEditTask(\''+t.id+'\')">✏️</button><button class="task-act-btn" style="background:#fee2e2" onclick="deleteTask(\''+t.id+'\')">🗑️</button></div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function renderGoal(){
+  if(!data)return;
+  var g=data.goals[selectedKid],saved=getSaved(selectedKid),pct=getGoalPct(selectedKid);
+  document.getElementById('goal-kid-lbl').textContent=selectedKid==='dhruv'?'Dhruv':'Vedika';
+  var el=document.getElementById('goal-display');
+  if(!g||!g.target){el.innerHTML='<div style="text-align:center;padding:10px 0"><div style="font-size:26px;margin-bottom:5px">🎯</div><div style="font-size:12px;color:var(--gray);margin-bottom:8px">No goal set yet!</div><button class="btn btn-green" style="width:100%" onclick="openGoalModal()">🎯 Set a Goal</button></div>';}
+  else{var rem=Math.max(0,g.target-saved);el.innerHTML='<div class="goal-card"><div style="font-size:12px;font-weight:800;color:#78350f;margin-bottom:6px">🎯 '+g.name+'</div><div class="goal-progress-big"><div class="goal-progress-fill" id="big-goal-fill" style="width:0%"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700"><span style="color:var(--green)">₹'+saved+' saved</span><span style="color:var(--amber)">₹'+g.target+' goal</span></div>'+(rem>0?'<div style="font-size:11px;color:#92400e;margin-top:5px;text-align:center">₹'+rem+' more to go!</div>':'<div style="font-size:12px;font-weight:800;color:var(--green);margin-top:5px;text-align:center">🎉 Goal reached!</div>')+'</div>';setTimeout(function(){var f=document.getElementById('big-goal-fill');if(f)f.style.width=pct+'%';},100);}
+}
+
+function renderSummary(){
+  if(!data)return;
+  var earned=getWeekEarned(selectedKid,weekOffset),saved=getSaved(selectedKid,weekOffset),spent=getSpent(selectedKid,weekOffset);
+  var tasks=getTasks(),possible=tasks.reduce(function(s,t){return s+t.amount*7;},0);
+  var note=data['spend_note_'+selectedKid]||'';
+  document.getElementById('summary-kid-lbl').textContent=selectedKid==='dhruv'?'Dhruv':'Vedika';
+  var rows=[['Total earned','₹'+earned,'var(--green)'],['Spent'+(note?' ('+note+')':''),'₹'+spent,'var(--red)'],['Saved','₹'+saved,'var(--blue)'],['Max possible','₹'+possible,'var(--gray)']];
+  document.getElementById('summary-body').innerHTML=rows.map(function(r){return '<div class="summary-row"><span>'+r[0]+'</span><span style="font-weight:700;color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
+}
+
+// ══ LEVELS ══
+var LEVELS=[{name:'Beginner',nameHi:'शुरुआती',min:0,icon:'🌱',color:'#6b7280'},{name:'Rising Star',nameHi:'उभरता सितारा',min:200,icon:'⭐',color:'#f59e0b'},{name:'Champion',nameHi:'चैंपियन',min:500,icon:'🏆',color:'#3b82f6'},{name:'Legend',nameHi:'किंवदंती',min:1000,icon:'🌟',color:'#7c3aed'}];
+function getAllTimeEarned(kid){if(!data)return 0;var tot=0;Object.keys(data.checks[kid]||{}).forEach(function(key){var ch=data.checks[kid][key];var all=[].concat(data.tasks.vacation||[]).concat(data.tasks.school||[]);all.forEach(function(t){if(ch[t.id])tot+=t.amount;});});(data.bonuses&&data.bonuses[kid]||[]).forEach(function(b){tot+=b.amount;});return tot;}
+function getLevel(kid){var tot=getAllTimeEarned(kid);for(var i=LEVELS.length-1;i>=0;i--){if(tot>=LEVELS[i].min)return{level:LEVELS[i],total:tot,idx:i};}return{level:LEVELS[0],total:tot,idx:0};}
+function getStreak(kid){var s=0;for(var i=0;i<30;i++){var dd=new Date();dd.setDate(dd.getDate()-i);var key=kid+'_'+mode+'_'+dd.getFullYear()+'-'+(dd.getMonth()+1)+'-'+dd.getDate();var ch=(data&&data.checks&&data.checks[kid]&&data.checks[kid][key])||{};var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});var e=0;tasks.forEach(function(t){if(ch[t.id])e+=t.amount;});if(e>0)s++;else break;}return s;}
+function isPerfectDay(kid,day,wOff){var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});var ch=getChecks(kid,day,wOff||weekOffset);return tasks.length>0&&tasks.every(function(t){return ch[t.id];});}
+
+function renderLevel(){
+  if(!data)return;
+  var kid=selectedKid,lv=getLevel(kid),streak=getStreak(kid);
+  var nxt=LEVELS[Math.min(lv.idx+1,LEVELS.length-1)];
+  var pct=lv.idx<LEVELS.length-1?Math.min(100,Math.max(0,Math.round((lv.total-lv.level.min)/(nxt.min-lv.level.min)*100))):100;
+  var perf=0;for(var d=1;d<=7;d++){if(isPerfectDay(kid,d,weekOffset))perf++;}
+  document.getElementById('level-kid-lbl').textContent=kid==='dhruv'?'Dhruv':'Vedika';
+  document.getElementById('streak-badge').textContent=streak>0?'🔥 '+streak+' days':'—';
+  document.getElementById('level-display').innerHTML=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+      '<div style="font-size:32px">'+lv.level.icon+'</div>'+
+      '<div style="flex:1"><div style="font-size:14px;font-weight:900;color:'+lv.level.color+'">'+(lang==='hi'?lv.level.nameHi:lv.level.name)+'</div>'+
+      '<div style="font-size:10px;color:#9ca3af">All-time: ₹'+lv.total+'</div></div>'+
+      (lv.idx<LEVELS.length-1?'<div style="text-align:right;font-size:10px;color:#9ca3af"><div>Next: '+nxt.icon+'</div><div style="font-weight:700;color:'+lv.level.color+'">₹'+(nxt.min-lv.total)+' to go</div></div>':'<div style="font-size:11px;font-weight:700;color:#7c3aed">MAX! 🌟</div>')+
+    '</div>'+
+    '<div class="level-bar-bg"><div class="level-bar-fill" id="lvl-fill" style="width:0%;background:'+lv.level.color+'"></div></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">'+
+      '<div style="background:#fff7ed;border-radius:7px;padding:7px;text-align:center"><div style="font-size:14px">🔥</div><div style="font-size:12px;font-weight:800;color:#ea580c">'+streak+'</div><div style="font-size:9px;color:#9ca3af">Streak</div></div>'+
+      '<div style="background:#f0fdf4;border-radius:7px;padding:7px;text-align:center"><div style="font-size:14px">⭐</div><div style="font-size:12px;font-weight:800;color:#059669">'+perf+'</div><div style="font-size:9px;color:#9ca3af">Perfect days</div></div>'+
+      '<div style="background:#ede9fe;border-radius:7px;padding:7px;text-align:center"><div style="font-size:14px">💰</div><div style="font-size:12px;font-weight:800;color:#7c3aed">₹'+lv.total+'</div><div style="font-size:9px;color:#9ca3af">Total</div></div>'+
+    '</div>';
+  setTimeout(function(){var f=document.getElementById('lvl-fill');if(f)f.style.width=pct+'%';},100);
+}
+
+function renderBadges(){
+  if(!data)return;
+  var kid=selectedKid,earned=getWeekEarned(kid,weekOffset),streak=getStreak(kid),lv=getLevel(kid);
+  var badges=[];
+  if(earned>=30)badges.push({e:'💰',l:'₹30+ Week',c:'#fef3c7',t:'#92400e'});
+  if(earned>=75)badges.push({e:'⭐',l:'₹75+ Week',c:'#fde68a',t:'#78350f'});
+  if(earned>=100)badges.push({e:'🌟',l:'₹100+ Week',c:'#fef3c7',t:'#7c3aed'});
+  if(earned>=150)badges.push({e:'👑',l:'₹150+ Week',c:'#ede9fe',t:'#5b21b6'});
+  if(streak>=2)badges.push({e:'🔥',l:streak+'-day streak',c:'#fee2e2',t:'#991b1b'});
+  if(streak>=7)badges.push({e:'💎',l:'Full week!',c:'#dbeafe',t:'#1d4ed8'});
+  var perf=0;for(var d=1;d<=7;d++){if(isPerfectDay(kid,d,weekOffset))perf++;}
+  if(isPerfectDay(kid,weekOffset===0?today:selectedDay,weekOffset))badges.push({e:'✨',l:'Perfect day!',c:'#f0fdf4',t:'#065f46'});
+  if(perf>=3)badges.push({e:'🏅',l:perf+' perfect days',c:'#d1fae5',t:'#065f46'});
+  if(perf===7)badges.push({e:'🏆',l:'Week Hero!',c:'#fef3c7',t:'#92400e'});
+  if(data.goals[kid]&&data.goals[kid].target)badges.push({e:'🎯',l:'Goal Set',c:'#ede9fe',t:'#5b21b6'});
+  if(getGoalPct(kid)>=100)badges.push({e:'🎉',l:'Goal Reached!',c:'#d1fae5',t:'#065f46'});
+  badges.push({e:lv.level.icon,l:lang==='hi'?lv.level.nameHi:lv.level.name,c:'#f3f4f6',t:lv.level.color});
+  var el=document.getElementById('badges-display');
+  el.innerHTML=badges.length===0?'<div style="font-size:12px;color:var(--gray);padding:4px">Complete tasks to earn badges!</div>':badges.map(function(b){return '<span class="badge" style="background:'+b.c+';color:'+b.t+'">'+b.e+' '+b.l+'</span>';}).join('');
+}
+
+// ══ CELEBRATION ══
+var lastCount={};
+function checkCelebration(kid){
+  var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
+  var ch=getChecks(kid,weekOffset===0?today:selectedDay,weekOffset);
+  var done=tasks.filter(function(t){return ch[t.id];}).length;
+  var key=kid+'_'+selectedDay+'_'+weekOffset,prev=lastCount[key]||0;lastCount[key]=done;
+  if(done===tasks.length&&tasks.length>0&&prev<tasks.length)setTimeout(function(){showCelebration(kid);},200);
+}
+function showCelebration(kid){
+  var colors=['#3b82f6','#ec4899','#f59e0b','#059669','#7c3aed','#ef4444'];
+  for(var i=0;i<18;i++){(function(idx){setTimeout(function(){var c=document.createElement('div');c.className='confetti-piece';c.style.left=Math.random()*window.innerWidth+'px';c.style.top=window.innerHeight/2+'px';c.style.background=colors[idx%6];c.style.animationDelay=(Math.random()*.3)+'s';document.body.appendChild(c);setTimeout(function(){c.remove();},1200);},idx*40);})(i);}
+  var msg=document.createElement('div');msg.className='celebrate-msg';
+  msg.innerHTML='<div style="font-size:36px;margin-bottom:6px">🎉</div><div style="font-size:17px;font-weight:900;color:#1f2937;margin-bottom:3px">Perfect Day!</div><div style="font-size:13px;color:#6b7280;margin-bottom:10px">'+(kid==='dhruv'?'Dhruv 🐯':'Vedika 🐼')+' completed ALL tasks!</div><div style="font-size:22px">⭐🏆⭐</div>';
+  document.body.appendChild(msg);setTimeout(function(){msg.remove();},2800);
+}
+
+// ══ TABS / MODE / LANG ══
+var currentTab='home';
+function switchTab(tab){
+  currentTab=tab;
+  ['home','photos','report','admin'].forEach(function(t){var v=document.getElementById('view-'+t);if(v)v.classList.toggle('hidden',t!==tab);var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);});
+  if(tab==='photos')renderFolderView();
+  if(tab==='report')renderReport();
+  if(tab==='admin')renderUsersList();
+}
+function setMode(m){mode=m;document.getElementById('mode-vacation').className='mode-btn'+(m==='vacation'?' active':'');document.getElementById('mode-school').className='mode-btn'+(m==='school'?' active':'');render();}
+function setLang(l){lang=l;document.getElementById('lang-en').className='lang-btn'+(l==='en'?' active':'');document.getElementById('lang-hi').className='lang-btn'+(l==='hi'?' active':'');render();}
+function selectKid(kid){selectedKid=kid;render();}
+function selectDay(day){selectedDay=day;render();}
+function changeWeek(dir){if(weekOffset+dir>0)return;weekOffset+=dir;selectedDay=weekOffset<0?7:today;render();}
+function changeReportWeek(dir){if(reportWeekOffset+dir>0)return;reportWeekOffset+=dir;var lbl=document.getElementById('report-week-label');lbl.textContent=reportWeekOffset===0?'This week':reportWeekOffset===-1?'Last week':getWeekStartLabel(reportWeekOffset);var nb=document.getElementById('report-next-btn');if(nb)nb.style.opacity=reportWeekOffset>=0?'.3':'1';renderReport();}
+
+// ══ TASKS CRUD ══
+function openAddTask(){document.getElementById('edit-task-id').value='';['task-name-en','task-name-hi','task-amount','task-time'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('task-kid').value='both';document.getElementById('modal-task-title').textContent='➕ Add New Task';document.getElementById('save-task-btn').textContent='Save Task';document.getElementById('modal-task').classList.remove('hidden');}
+function openEditTask(id){var t=((data.tasks&&data.tasks[mode])||[]).find(function(x){return x.id===id;});if(!t)return;document.getElementById('edit-task-id').value=id;document.getElementById('task-name-en').value=t.en||'';document.getElementById('task-name-hi').value=t.hi||'';document.getElementById('task-amount').value=t.amount||0;document.getElementById('task-kid').value=t.kid||'both';document.getElementById('task-time').value=t.time||'';document.getElementById('modal-task-title').textContent='✏️ Edit Task';document.getElementById('save-task-btn').textContent='Update Task';document.getElementById('modal-task').classList.remove('hidden');}
+function deleteTask(id){if(!confirm('Delete this task?'))return;data.tasks[mode]=(data.tasks[mode]||[]).filter(function(t){return t.id!==id;});saveData();render();showToast('Task deleted! 🗑️');}
+function saveTask(){var en=document.getElementById('task-name-en').value.trim(),hi=document.getElementById('task-name-hi').value.trim(),amount=parseInt(document.getElementById('task-amount').value)||0,kid=document.getElementById('task-kid').value,time=document.getElementById('task-time').value,editId=document.getElementById('edit-task-id').value;if(!en){showToast('Enter task name!');return;}if(!data.tasks[mode])data.tasks[mode]=[];if(editId){var idx=data.tasks[mode].findIndex(function(t){return t.id===editId;});if(idx>-1)data.tasks[mode][idx]={id:editId,en:en,hi:hi||en,amount:amount,kid:kid,time:time};showToast('Updated! ✅');}else{data.tasks[mode].push({id:'c'+Date.now(),en:en,hi:hi||en,amount:amount,kid:kid,time:time});showToast('Added! ✅');}saveData();closeModal('modal-task');render();}
+
+// ══ GOAL ══
+function openGoalModal(){if(!data)return;var g=data.goals[selectedKid];document.getElementById('goal-name').value=g&&g.name?g.name:'';document.getElementById('goal-amount').value=g&&g.target?g.target:'';document.getElementById('modal-goal').classList.remove('hidden');}
+function saveGoal(){var name=document.getElementById('goal-name').value.trim(),amount=parseInt(document.getElementById('goal-amount').value)||0;if(!name||!amount){showToast('Fill all fields!');return;}data.goals[selectedKid]={name:name,target:amount};saveData();closeModal('modal-goal');render();showToast('Goal set! 🎯');}
+
+// ══ SPEND ══
+function openSpendModal(){if(!data)return;var earned=getWeekEarned(selectedKid),spent=getSpent(selectedKid),saved=getSaved(selectedKid);document.getElementById('spend-kid-lbl').textContent='How much did '+(selectedKid==='dhruv'?'Dhruv':'Vedika')+' spend?';document.getElementById('spend-amount').value=spent>0?spent:'';document.getElementById('spend-note').value=data['spend_note_'+selectedKid]||'';document.getElementById('spend-info').textContent='Earned: ₹'+earned+' · Saved: ₹'+saved;document.getElementById('modal-spend').classList.remove('hidden');}
+function saveSpend(){var amount=parseInt(document.getElementById('spend-amount').value)||0,note=document.getElementById('spend-note').value.trim();if(weekOffset===0)data.spent[selectedKid]=amount;else data['spent_'+selectedKid+'_'+weekOffset]=amount;if(note)data['spend_note_'+selectedKid]=note;saveData();closeModal('modal-spend');render();showToast('Recorded! 💸');}
+
+// ══ BONUS ══
+function openBonusModal(){if(!data)return;document.getElementById('bonus-kid-lbl').textContent='Give bonus to '+(selectedKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼');document.getElementById('bonus-amount').value='';document.getElementById('bonus-reason').value='';document.getElementById('modal-bonus').classList.remove('hidden');}
+function saveBonus(){var amount=parseInt(document.getElementById('bonus-amount').value)||0,reason=document.getElementById('bonus-reason').value.trim();if(!amount){showToast('Enter amount!');return;}if(!data.bonuses)data.bonuses={dhruv:[],vedika:[]};if(!data.bonuses[selectedKid])data.bonuses[selectedKid]=[];data.bonuses[selectedKid].push({amount:amount,reason:reason||'Bonus',date:new Date().toLocaleDateString('en-IN')});saveData();closeModal('modal-bonus');render();showToast('🎁 Bonus ₹'+amount+' given!');showCelebration(selectedKid);}
+
+// ══ FOLDERS & FILES ══
+var photoKid='dhruv',currentFolder='memories';
+var DFLT=[{id:'memories',name:'Daily Memories',icon:'📸',locked:true},{id:'school',name:'School Records',icon:'🎓',locked:true},{id:'awards',name:'Awards & Certs',icon:'🏆',locked:true},{id:'health',name:'Health Docs',icon:'🏥',locked:true},{id:'artwork',name:'Art & Creativity',icon:'🎨',locked:true}];
+var FICONS=['📸','📄','🎓','🏆','🎨','⚽','🏥','📝','🌟','🎵','🧪','📚','🎭','🧸','🌈','✈️'];
+function initFolders(){if(!data.folders)data.folders={dhruv:{},vedika:{}};if(!data.files)data.files={dhruv:{},vedika:{}};['dhruv','vedika'].forEach(function(kid){if(!data.folders[kid])data.folders[kid]={};if(!data.files[kid])data.files[kid]={};DFLT.forEach(function(f){if(!data.folders[kid][f.id])data.folders[kid][f.id]={id:f.id,name:f.name,icon:f.icon,locked:true};if(!data.files[kid][f.id])data.files[kid][f.id]=[];});}); }
+function setPhotoKid(kid){photoKid=kid;document.getElementById('pkid-dhruv').style.background=kid==='dhruv'?'var(--blue)':'#e5e7eb';document.getElementById('pkid-dhruv').style.color=kid==='dhruv'?'#fff':'#374151';document.getElementById('pkid-vedika').style.background=kid==='vedika'?'var(--pink)':'#e5e7eb';document.getElementById('pkid-vedika').style.color=kid==='vedika'?'#fff':'#374151';currentFolder='memories';renderFolderView();}
+function renderFolderView(){initFolders();document.getElementById('folder-kid-lbl').textContent=photoKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼';var folders=data.folders[photoKid];document.getElementById('folder-bar').innerHTML=Object.values(folders).map(function(f){var isA=f.id===currentFolder,count=(data.files[photoKid][f.id]||[]).length;return '<div onclick="selectFolder(\''+f.id+'\')" style="cursor:pointer;padding:7px 10px;border-radius:9px;border:2px solid '+(isA?'var(--purple)':'#e5e7eb')+';background:'+(isA?'var(--purple-light)':'#f9fafb')+';display:flex;flex-direction:column;align-items:center;gap:2px;min-width:60px"><div style="font-size:20px">'+f.icon+'</div><div style="font-size:9px;font-weight:700;color:'+(isA?'var(--purple)':'#374151')+';text-align:center">'+f.name+'</div><div style="font-size:9px;color:#9ca3af">'+count+' items</div></div>';}).join('');renderFilesGrid();}
+function selectFolder(id){currentFolder=id;renderFolderView();}
+function renderFilesGrid(){initFolders();var folder=data.folders[photoKid][currentFolder],files=data.files[photoKid][currentFolder]||[];document.getElementById('files-folder-title').textContent=(folder?folder.icon+' '+folder.name:'');document.getElementById('files-count').textContent=files.length+' items';document.getElementById('del-folder-btn').style.display=(folder&&folder.locked)?'none':'inline-block';var grid=document.getElementById('files-grid');if(files.length===0){grid.innerHTML='<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">📭 No files yet. Tap + Upload!</div>';return;}grid.innerHTML='<div class="photo-grid-files">'+files.map(function(f,i){var isImg=f.type&&f.type.indexOf('image')>-1;var ext=f.name?f.name.split('.').pop().toUpperCase():'FILE';var ec={PDF:'#ef4444',DOC:'#3b82f6',DOCX:'#3b82f6',XLS:'#059669',XLSX:'#059669'}[ext]||'#6b7280';return '<div class="file-thumb" onclick="previewFile('+i+')">'+( isImg?'<img src="'+f.data+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">':'<div style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><div style="font-size:22px">📄</div><div style="font-size:8px;font-weight:800;color:'+ec+';background:'+ec+'20;padding:2px 5px;border-radius:3px">'+ext+'</div></div>')+'<div style="padding:3px 5px;font-size:8px;color:#374151;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</div></div>';}).join('')+'</div>';}
+function handleFileUpload(e){var files=Array.from(e.target.files);if(!files.length)return;initFolders();var pending=files.length;files.forEach(function(file){var reader=new FileReader();reader.onload=function(ev){if(!data.files[photoKid][currentFolder])data.files[photoKid][currentFolder]=[];data.files[photoKid][currentFolder].push({name:file.name,type:file.type,size:file.size,data:ev.target.result,date:new Date().toLocaleDateString('en-IN')});pending--;if(pending===0){saveData();renderFolderView();showToast(files.length+' file'+(files.length>1?'s':'')+' uploaded! ✅');}};reader.readAsDataURL(file);});e.target.value='';}
+var previewIdx=null;
+function previewFile(i){var files=data.files[photoKid][currentFolder]||[],f=files[i];if(!f)return;previewIdx=i;var isImg=f.type&&f.type.indexOf('image')>-1;document.getElementById('preview-title').textContent=f.name;document.getElementById('preview-body').innerHTML=isImg?'<img src="'+f.data+'" style="max-width:100%;border-radius:8px;max-height:260px;object-fit:contain">':'<div style="padding:16px;background:#f9fafb;border-radius:8px;font-size:12px"><div style="font-size:36px;margin-bottom:6px">📄</div><div style="font-weight:700">'+f.name+'</div></div>';document.getElementById('preview-delete-btn').onclick=function(){if(!confirm('Delete?'))return;data.files[photoKid][currentFolder].splice(i,1);saveData();closeModal('modal-preview');renderFolderView();showToast('Deleted!');}; document.getElementById('preview-download-btn').onclick=function(){var a=document.createElement('a');a.href=f.data;a.download=f.name;a.click();};document.getElementById('modal-preview').classList.remove('hidden');}
+function openNewFolder(){document.getElementById('folder-name-input').value='';document.getElementById('folder-icon-selected').value='📁';document.getElementById('icon-picker').innerHTML=FICONS.map(function(ic){return '<span onclick="selIcon(this,\''+ic+'\')" style="cursor:pointer;font-size:22px;padding:4px;border-radius:6px;border:2px solid transparent">'+ic+'</span>';}).join('');document.getElementById('modal-folder').classList.remove('hidden');}
+function selIcon(el,icon){document.getElementById('icon-picker').querySelectorAll('span').forEach(function(s){s.style.borderColor='transparent';});el.style.borderColor='var(--purple)';document.getElementById('folder-icon-selected').value=icon;}
+function saveNewFolder(){var name=document.getElementById('folder-name-input').value.trim(),icon=document.getElementById('folder-icon-selected').value||'📁';if(!name){showToast('Enter folder name!');return;}initFolders();var id='cf'+Date.now();data.folders[photoKid][id]={id:id,name:name,icon:icon,locked:false};data.files[photoKid][id]=[];saveData();currentFolder=id;closeModal('modal-folder');renderFolderView();showToast('Folder created! 📁');}
+function deleteCurrentFolder(){var folder=data.folders[photoKid][currentFolder];if(!folder||folder.locked){showToast('Cannot delete default folders!');return;}if(!confirm('Delete folder and all files?'))return;delete data.folders[photoKid][currentFolder];delete data.files[photoKid][currentFolder];saveData();currentFolder='memories';renderFolderView();showToast('Deleted! 🗑️');}
+
+// ══ TEACH-E ══
+var teachETxt='';
+function teachESpeak(key){var dE=getWeekEarned('dhruv',reportWeekOffset),vE=getWeekEarned('vedika',reportWeekOffset),dS=getSaved('dhruv',reportWeekOffset),vS=getSaved('vedika',reportWeekOffset);var texts={dhruv:'Dhruv champion! This week you earned ₹'+dE+' and saved ₹'+dS+'! '+(dE>80?'Amazing!':'Keep pushing!')+((!data.goals.dhruv||!data.goals.dhruv.target)?' Set a savings goal today!':' Keep working toward '+data.goals.dhruv.name+'! Roar!'),vedika:'Vedika superstar! You earned ₹'+vE+' and saved ₹'+vS+'! '+(vE>80?'Incredible!':'Even better next week!')+((!data.goals.vedika||!data.goals.vedika.target)?' Set a savings goal!':' Your goal '+data.goals.vedika.name+' is getting closer! Shine on!'),goal:'Setting a savings goal is the most powerful habit! Every rupee has a purpose. It teaches patience, maths, and discipline. The happiness of buying something with your own money is ten times better than a gift! Set your goal today!'};teachETxt=texts[key];document.getElementById('teachE-text').textContent=teachETxt.substring(0,200)+'...';document.getElementById('teachE-speak-btn').style.display='block';}
+function speakCurrent(){if(!window.speechSynthesis||!teachETxt)return;window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(teachETxt);u.rate=1.0;u.pitch=1.4;u.volume=1;var vv=window.speechSynthesis.getVoices();for(var i=0;i<vv.length;i++){if(/female|samantha|karen|victoria|moira|tessa/i.test(vv[i].name)&&vv[i].lang.indexOf('en')===0){u.voice=vv[i];break;}}window.speechSynthesis.speak(u);}
+
+// ══ REPORT ══
+function renderReport(){
+  if(!data)return;
+  var DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],now=new Date();
+  var weekLabel=reportWeekOffset===0?'Week of '+now.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):getWeekStartLabel(reportWeekOffset);
+  var modeLabel=mode==='vacation'?'🌴 Vacation':'📚 School';
+  function kd(kid){
+    var color=kid==='dhruv'?'#3b82f6':'#ec4899',bg=kid==='dhruv'?'#eff6ff':'#fdf2f8',emoji=kid==='dhruv'?'🐯':'🐼',name=kid==='dhruv'?'Dhruv':'Vedika';
+    var earned=getWeekEarned(kid,reportWeekOffset),saved=getSaved(kid,reportWeekOffset),spent=getSpent(kid,reportWeekOffset);
+    var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
+    var possible=tasks.reduce(function(s,t){return s+t.amount*7;},0),score=possible>0?Math.round(earned/possible*100):0;
+    var goal=data.goals[kid],goalPct=getGoalPct(kid);
+    var dayE=[1,2,3,4,5,6,7].map(function(d){return getEarned(kid,d,reportWeekOffset);});
+    var maxE=Math.max(1,Math.max.apply(null,dayE));
+    var bars=DAYS.map(function(d,i){var e=dayE[i],h=Math.max(3,Math.round((e/maxE)*52)),isFuture=reportWeekOffset===0&&(i+1)>today;return '<div class="rpt-bar-w"><div style="font-size:7px;color:'+color+'">'+(isFuture||e===0?'':e)+'</div><div class="rpt-bar-b" style="height:'+h+'px;background:'+(isFuture?'#e5e7eb':color)+';opacity:'+(isFuture?.3:1)+'"></div><div class="rpt-bar-lbl">'+d+'</div></div>';}).join('');
+    var good=[],grow=[],maxD=reportWeekOffset===0?today:7;
+    for(var d=1;d<=maxD;d++){var ch=getChecks(kid,d,reportWeekOffset);tasks.forEach(function(t){if(ch[t.id]){if(good.indexOf(t.en)<0)good.push(t.en);}else{if(grow.indexOf(t.en)<0)grow.push(t.en);}});}
+    good=good.slice(0,5);grow=grow.filter(function(x){return good.indexOf(x)<0;}).slice(0,4);
+    return{color,bg,emoji,name,earned,saved,spent,score,goal,goalPct,bars,good,grow};
+  }
+  var dh=kd('dhruv'),ve=kd('vedika');
+  function col(d){return '<div class="rpt-kid-col"><div class="rpt-kid-header" style="border-color:'+d.color+'"><div style="width:36px;height:36px;border-radius:50%;background:'+d.bg+';display:flex;align-items:center;justify-content:center;font-size:18px">'+d.emoji+'</div><div><div style="font-size:14px;font-weight:900;color:'+d.color+'">'+d.name+'</div><div style="font-size:10px;color:#9ca3af">Score: '+d.score+'%</div></div></div><div class="rpt-4stats"><div class="rpt-stat" style="background:#f0fdf4"><div class="rpt-stat-v" style="color:#059669">₹'+d.earned+'</div><div class="rpt-stat-l" style="color:#059669">Earned</div></div><div class="rpt-stat" style="background:'+d.bg+'"><div class="rpt-stat-v" style="color:'+d.color+'">₹'+d.saved+'</div><div class="rpt-stat-l" style="color:'+d.color+'">Saved</div></div><div class="rpt-stat" style="background:#fee2e2"><div class="rpt-stat-v" style="color:#ef4444">₹'+d.spent+'</div><div class="rpt-stat-l" style="color:#ef4444">Spent</div></div><div class="rpt-stat" style="background:#fef3c7"><div class="rpt-stat-v" style="color:#f59e0b">'+d.score+'%</div><div class="rpt-stat-l" style="color:#f59e0b">Score</div></div></div><div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:5px;text-transform:uppercase">Daily Earnings</div><div class="rpt-bars">'+d.bars+'</div>'+(d.goal&&d.goal.target?'<div style="margin-top:8px"><div style="font-size:10px;font-weight:800;color:#374151">🎯 '+d.goal.name+'</div><div class="rpt-goal-bar"><div class="rpt-goal-fill" style="width:'+d.goalPct+'%;background:'+d.color+'"></div></div><div style="font-size:10px;color:#6b7280">₹'+d.saved+' / ₹'+d.goal.target+' ('+d.goalPct+'%)</div></div>':'<div style="font-size:10px;color:#9ca3af;margin-top:8px;padding:6px;background:#f9fafb;border-radius:6px;text-align:center">No savings goal</div>')+'</div>';}
+  function detailPage(d,pid){
+    var DAYS_F=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===d.name.toLowerCase();});
+    var rows=DAYS_F.map(function(day,i){var dn=i+1,e=getEarned(d.name.toLowerCase(),dn,reportWeekOffset),ch=getChecks(d.name.toLowerCase(),dn,reportWeekOffset),done=tasks.filter(function(t){return ch[t.id];}).length,isFuture=reportWeekOffset===0&&dn>today;return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f9fafb;font-size:11px"><span style="font-weight:700">'+day+'</span><span style="color:#6b7280">'+done+'/'+tasks.length+'</span><span style="font-weight:800;color:'+(isFuture?'#d1d5db':d.color)+'">'+(isFuture?'—':'₹'+e)+'</span></div>';}).join('');
+    return '<div class="rpt-detail-page" id="'+pid+'"><div style="background:'+d.color+';padding:16px 20px;color:#fff;display:flex;align-items:center;gap:10px"><div style="font-size:30px">'+d.emoji+'</div><div><div style="font-size:18px;font-weight:900">'+d.name+'\'s Report</div><div style="font-size:11px;opacity:.8">'+weekLabel+' · '+modeLabel+'</div></div></div><div style="padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:6px;text-transform:uppercase">📅 Day by Day</div>'+rows+'</div><div><div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:5px;text-transform:uppercase">🌟 Achievements</div><div>'+d.good.map(function(t){return '<span class="rpt-chip-g">✅ '+t+'</span>';}).join('')+'</div><div style="font-size:10px;font-weight:800;color:#374151;margin:10px 0 5px;text-transform:uppercase">📈 Improve</div><div>'+d.grow.map(function(t){return '<span class="rpt-chip-i">💡 '+t+'</span>';}).join('')+'</div></div></div><div style="margin-top:12px;background:#f9fafb;border-radius:8px;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center"><div><div style="font-size:16px;font-weight:900;color:#059669">₹'+d.earned+'</div><div style="font-size:9px;color:#9ca3af">Earned</div></div><div><div style="font-size:16px;font-weight:900;color:#ef4444">₹'+d.spent+'</div><div style="font-size:9px;color:#9ca3af">Spent</div></div><div><div style="font-size:16px;font-weight:900;color:'+d.color+'">₹'+d.saved+'</div><div style="font-size:9px;color:#9ca3af">Saved</div></div><div><div style="font-size:16px;font-weight:900;color:#f59e0b">'+d.score+'%</div><div style="font-size:9px;color:#9ca3af">Score</div></div></div></div><div class="rpt-footer">Journey of Champions · '+d.name+'\'s Report · '+now.toLocaleDateString('en-IN')+'</div></div>';
+  }
+  document.getElementById('report-content').innerHTML='<div class="rpt-page" id="rpt-p1"><div class="rpt-cover"><div style="font-size:32px;margin-bottom:6px">🏆</div><h2>Journey of Champions</h2><p>Dhruv & Vedika · '+modeLabel+'</p><div class="week-badge">'+weekLabel+'</div></div><div class="rpt-summary-grid">'+col(dh)+col(ve)+'</div><div class="rpt-footer">Generated by Journey of Champions · '+now.toLocaleDateString('en-IN')+'</div></div>'+detailPage(dh,'rpt-p2')+detailPage(ve,'rpt-p3');
+}
+
+function downloadPDF(){showToast('Preparing PDF...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){ls('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){var pages=['rpt-p1','rpt-p2','rpt-p3'],pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),pW=pdf.internal.pageSize.getWidth(),pH=pdf.internal.pageSize.getHeight(),done=0;function cap(i){var el=document.getElementById(pages[i]);if(!el){done++;if(done===pages.length)pdf.save('JOC_Report.pdf');return;}html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){if(i>0)pdf.addPage();var imgW=pW-16,imgH=(canvas.height*imgW)/canvas.width;pdf.addImage(canvas.toDataURL('image/png'),'PNG',8,8,imgW,Math.min(imgH,pH-16));done++;if(done===pages.length){pdf.save('JOC_Report.pdf');showToast('PDF saved! 📄');}else cap(i+1);});}cap(0);});});}
+function downloadJPG(){showToast('Preparing...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){['rpt-p1','rpt-p2','rpt-p3'].forEach(function(pid,i){var el=document.getElementById(pid);if(!el)return;html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){var a=document.createElement('a');a.download='JOC_'+['Summary','Dhruv','Vedika'][i]+'.jpg';a.href=canvas.toDataURL('image/jpeg',.95);a.click();});});setTimeout(function(){showToast('3 images saved! 🖼️');},1000);});}
+
+// ══ DEFAULT TASKS ══
+function defVacation(){return [{id:'t1',en:'Wake up on time & freshen up',hi:'समय पर उठो और तैयार हो',amount:5,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'t2',en:'Exercise / park / cycling',hi:'व्यायाम / पार्क / साइकिल',amount:8,kid:'both',time:'7:00 AM – 7:45 AM'},{id:'t3',en:'Help at home — chore done',hi:'घर में मदद करो',amount:10,kid:'both',time:'8:00 AM – 8:30 AM'},{id:'t4',en:'Bath on time',hi:'समय पर नहाओ',amount:5,kid:'both',time:'8:30 AM – 9:00 AM'},{id:'t5',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'9:00 AM – 9:30 AM'},{id:'t6',en:'Learning time completed',hi:'पढ़ाई का समय पूरा',amount:15,kid:'both',time:'10:00 AM – 11:00 AM'},{id:'t7',en:'Creative activity done',hi:'रचनात्मक काम किया',amount:10,kid:'both',time:'11:00 AM – 12:00 PM'},{id:'t8',en:'Lunch on time, helped clear up',hi:'समय पर खाना, साफ करने में मदद',amount:8,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'t9',en:'Rest & approved videos only',hi:'आराम और मान्य वीडियो',amount:5,kid:'both',time:'1:30 PM – 3:00 PM'},{id:'t10',en:'Outdoor activity / sports',hi:'बाहर खेलना / खेल',amount:8,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'t11',en:'Dinner & TV time (approved)',hi:'रात का खाना और टीवी समय',amount:5,kid:'both',time:'7:00 PM – 8:00 PM'},{id:'t12',en:'Special time with Mummy',hi:'मम्मी के साथ खास समय',amount:8,kid:'both',time:'8:00 PM – 8:30 PM'},{id:'t13',en:'Sleep on time without fuss',hi:'बिना नाटक समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'t14',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'t15',en:'Showed kindness without being asked',hi:'बिना कहे दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'t16',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'},{id:'t17',en:'Wrote / drew a thank-you note',hi:'धन्यवाद नोट लिखा / बनाया',amount:8,kid:'both',time:'Evening'}];}
+function defSchool(){return [{id:'s1',en:'Wake up on time',hi:'समय पर उठो',amount:5,kid:'both',time:'6:00 AM – 6:30 AM'},{id:'s2',en:'Get ready without reminder',hi:'बिना याद दिलाए तैयार हो',amount:8,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'s3',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'7:00 AM – 7:30 AM'},{id:'s4',en:'Bag packed & ready',hi:'बैग तैयार',amount:5,kid:'both',time:'7:30 AM – 7:45 AM'},{id:'s5',en:'Ate lunch properly at school',hi:'स्कूल में खाना ठीक से खाया',amount:5,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'s6',en:'No screen time before homework',hi:'होमवर्क से पहले कोई स्क्रीन नहीं',amount:10,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'s7',en:'Homework completed',hi:'होमवर्क पूरा किया',amount:15,kid:'both',time:'4:00 PM – 5:30 PM'},{id:'s8',en:'Reading for 15 minutes',hi:'15 मिनट पढ़ाई',amount:10,kid:'both',time:'5:30 PM – 5:45 PM'},{id:'s9',en:'Help at home after school',hi:'स्कूल के बाद घर में मदद',amount:8,kid:'both',time:'6:00 PM – 6:30 PM'},{id:'s10',en:'Bag packed for tomorrow',hi:'कल के लिए बैग तैयार',amount:5,kid:'both',time:'8:00 PM – 8:15 PM'},{id:'s11',en:'Sleep on time',hi:'समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'s12',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'s13',en:'Showed kindness',hi:'दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'s14',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'}];}
+
+document.querySelectorAll('.modal-bg').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.add('hidden');});});
+</script>
+</body>
+</html>
