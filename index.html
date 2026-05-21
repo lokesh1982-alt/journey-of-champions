@@ -263,6 +263,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="nav-tabs">
     <button class="nav-tab active" id="tab-home" onclick="switchTab('home')">🏠 Home</button>
+    <button class="nav-tab" id="tab-quiz" onclick="switchTab('quiz')">🧠 Quiz</button>
     <button class="nav-tab" id="tab-photos" onclick="switchTab('photos')">📁 Files</button>
     <button class="nav-tab" id="tab-report" onclick="switchTab('report')">📊 Report</button>
     <button class="nav-tab" id="tab-admin" onclick="switchTab('admin')" style="display:none">⚙️ Admin</button>
@@ -345,6 +346,110 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <!-- FILES -->
+  <!-- QUIZ TAB -->
+  <div id="view-quiz" class="hidden">
+    <div id="wallet-card" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;opacity:.8;font-weight:600">🪙 COIN WALLET</div>
+          <div style="font-size:28px;font-weight:900" id="wallet-coins">0 coins</div>
+          <div style="font-size:11px;opacity:.75" id="wallet-rupees">= ₹0.00</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;opacity:.8">20 coins = ₹1</div>
+          <button onclick="openRedeemModal()" style="margin-top:6px;border:2px solid rgba(255,255,255,.6);border-radius:50px;padding:6px 14px;font-size:12px;font-weight:700;color:#fff;background:transparent;cursor:pointer">💸 Redeem</button>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px;font-size:11px;display:flex;justify-content:space-between">
+        <span id="quiz-streak-lbl">🔥 Quiz streak: 0 days</span>
+        <span id="quiz-today-lbl">Today: 0/5 done</span>
+      </div>
+    </div>
+    <div id="quiz-state-start" class="section-card">
+      <div class="section-head" style="background:linear-gradient(135deg,#0ea5e9,#6d28d9)">
+        <div><div class="section-title">🧠 Daily Quiz</div><div class="section-sub" id="quiz-date-lbl">Today's 5 questions</div></div>
+        <div style="background:rgba(255,255,255,.2);border-radius:50px;padding:3px 10px;font-size:11px;font-weight:800;color:#fff">Win up to ₹5!</div>
+      </div>
+      <div class="section-body" style="text-align:center;padding:24px 16px">
+        <div style="font-size:48px;margin-bottom:12px">🧠</div>
+        <div style="font-size:15px;font-weight:800;color:#111;margin-bottom:6px">Ready for today's quiz?</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:16px;line-height:1.6">5 questions · ₹1 per correct answer<br>Complete all 5 to spin the Lucky Wheel! 🎰</div>
+        <button onclick="startQuiz()" id="start-quiz-btn" style="width:100%;border:none;border-radius:50px;padding:14px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;cursor:pointer">🚀 Start Quiz!</button>
+        <div id="quiz-already-done" style="display:none;margin-top:12px;background:#f0fdf4;border-radius:10px;padding:12px;font-size:12px;color:#065f46;font-weight:600">✅ You already completed today's quiz!<br>Come back tomorrow for new questions 😊</div>
+      </div>
+    </div>
+    <div id="quiz-state-question" class="hidden">
+      <div style="background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px">
+        <div style="background:linear-gradient(135deg,#0ea5e9,#6d28d9);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+          <div style="color:#fff;font-size:12px;font-weight:800" id="q-counter">Question 1/5</div>
+          <div style="display:flex;gap:4px" id="q-dots"></div>
+          <div style="color:#fff;font-size:12px;font-weight:800" id="q-score-lbl">Score: ₹0</div>
+        </div>
+        <!-- Timer bar -->
+        <div style="height:6px;background:#e5e7eb;position:relative">
+          <div id="q-timer-bar" style="height:6px;background:#22c55e;transition:width .1s linear;width:100%"></div>
+        </div>
+        <div style="padding:20px 16px">
+          <!-- Timer circle -->
+          <div style="display:flex;justify-content:center;margin-bottom:12px">
+            <div id="q-timer-circle" style="width:44px;height:44px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;transition:background .3s">10</div>
+          </div>
+          <div style="font-size:14px;font-weight:800;color:#111;line-height:1.5;margin-bottom:16px" id="q-text">Loading...</div>
+          <div id="q-options" style="display:flex;flex-direction:column;gap:8px"></div>
+          <div id="q-feedback" style="display:none;margin-top:12px;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;text-align:center"></div>
+          <button onclick="nextQuestion()" id="q-next-btn" style="display:none;width:100%;border:none;border-radius:50px;padding:12px;font-size:13px;font-weight:800;background:var(--purple);color:#fff;cursor:pointer;margin-top:12px">Next Question →</button>
+        </div>
+      </div>
+    </div>
+    <div id="quiz-state-spin" class="hidden">
+      <div style="background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px">
+        <div style="background:linear-gradient(135deg,#f59e0b,#ef4444);padding:12px 16px;text-align:center">
+          <div style="color:#fff;font-size:14px;font-weight:900">🎰 LUCKY SPIN!</div>
+          <div style="color:rgba(255,255,255,.85);font-size:11px;margin-top:2px" id="spin-score-msg">You scored ₹0!</div>
+        </div>
+        <div style="padding:20px 16px;text-align:center">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:16px">Spin the wheel to win bonus coins! 🪙</div>
+          <div style="position:relative;width:220px;height:220px;margin:0 auto 16px">
+            <canvas id="spin-wheel" width="220" height="220"></canvas>
+            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:24px">▼</div>
+          </div>
+          <div id="spin-result" style="display:none;font-size:22px;font-weight:900;color:#7c3aed;margin-bottom:12px"></div>
+          <button onclick="spinWheel()" id="spin-btn" style="width:100%;border:none;border-radius:50px;padding:14px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;cursor:pointer">🎰 SPIN!</button>
+          <button onclick="skipSpin()" style="width:100%;border:none;border-radius:50px;padding:10px;font-size:12px;font-weight:700;background:transparent;color:#9ca3af;cursor:pointer;margin-top:6px">Skip spin</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-head" style="background:var(--green)"><div><div class="section-title">📊 Quiz History</div></div></div>
+      <div class="section-body" id="quiz-history"></div>
+    </div>
+    <div class="section-card" id="quiz-admin-panel" style="display:none">
+      <div class="section-head" style="background:var(--purple)"><div><div class="section-title">👑 All Results</div></div></div>
+      <div class="section-body" id="quiz-all-results"></div>
+    </div>
+  </div>
+
+  <!-- REDEEM MODAL -->
+  <div class="modal-bg hidden" id="modal-redeem">
+    <div class="modal">
+      <h2>💸 Redeem Coins</h2>
+      <div style="background:#ede9fe;border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">
+        <div style="font-size:24px;font-weight:900;color:#7c3aed" id="redeem-balance">0 coins</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px">Available balance</div>
+      </div>
+      <div style="font-size:12px;color:#374151;margin-bottom:10px;background:#f9fafb;border-radius:8px;padding:10px">💡 <strong>Rate:</strong> 20 coins = ₹1 · Minimum: 20 coins</div>
+      <div class="input-group">
+        <label>Coins to redeem</label>
+        <input type="number" id="redeem-coins" placeholder="e.g. 100" min="20" step="20" oninput="updateRedeemCalc()">
+      </div>
+      <div style="background:#d1fae5;border-radius:8px;padding:8px 10px;font-size:12px;color:#065f46;font-weight:700;margin-bottom:4px" id="redeem-calc">= ₹0.00</div>
+      <div class="modal-btns">
+        <button class="btn btn-outline" onclick="closeModal('modal-redeem')">Cancel</button>
+        <button class="btn btn-green" onclick="doRedeem()">Redeem ✅</button>
+      </div>
+    </div>
+  </div>
+
   <div id="view-photos" class="hidden">
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn" id="pkid-dhruv" style="flex:1;background:var(--blue);color:#fff" onclick="setPhotoKid('dhruv')">🐯 Dhruv</button>
@@ -1024,10 +1129,14 @@ function showCelebration(kid){
 var currentTab='home';
 function switchTab(tab){
   currentTab=tab;
-  ['home','photos','report','admin'].forEach(function(t){var v=document.getElementById('view-'+t);if(v)v.classList.toggle('hidden',t!==tab);var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);});
+  ['home','quiz','photos','report','admin'].forEach(function(t){
+    var v=document.getElementById('view-'+t);if(v)v.classList.toggle('hidden',t!==tab);
+    var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
+  });
   if(tab==='photos')renderFolderView();
   if(tab==='report')renderReport();
   if(tab==='admin')renderUsersList();
+  if(tab==='quiz')initQuizTab();
 }
 function setMode(m){mode=m;document.getElementById('mode-vacation').className='mode-btn'+(m==='vacation'?' active':'');document.getElementById('mode-school').className='mode-btn'+(m==='school'?' active':'');render();}
 function setLang(l){lang=l;document.getElementById('lang-en').className='lang-btn'+(l==='en'?' active':'');document.getElementById('lang-hi').className='lang-btn'+(l==='hi'?' active':'');render();}
@@ -1114,7 +1223,493 @@ function downloadJPG(){showToast('Preparing...');function ls(src,cb){if(document
 function defVacation(){return [{id:'t1',en:'Wake up on time & freshen up',hi:'समय पर उठो और तैयार हो',amount:5,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'t2',en:'Exercise / park / cycling',hi:'व्यायाम / पार्क / साइकिल',amount:8,kid:'both',time:'7:00 AM – 7:45 AM'},{id:'t3',en:'Help at home — chore done',hi:'घर में मदद करो',amount:10,kid:'both',time:'8:00 AM – 8:30 AM'},{id:'t4',en:'Bath on time',hi:'समय पर नहाओ',amount:5,kid:'both',time:'8:30 AM – 9:00 AM'},{id:'t5',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'9:00 AM – 9:30 AM'},{id:'t6',en:'Learning time completed',hi:'पढ़ाई का समय पूरा',amount:15,kid:'both',time:'10:00 AM – 11:00 AM'},{id:'t7',en:'Creative activity done',hi:'रचनात्मक काम किया',amount:10,kid:'both',time:'11:00 AM – 12:00 PM'},{id:'t8',en:'Lunch on time, helped clear up',hi:'समय पर खाना, साफ करने में मदद',amount:8,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'t9',en:'Rest & approved videos only',hi:'आराम और मान्य वीडियो',amount:5,kid:'both',time:'1:30 PM – 3:00 PM'},{id:'t10',en:'Outdoor activity / sports',hi:'बाहर खेलना / खेल',amount:8,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'t11',en:'Dinner & TV time (approved)',hi:'रात का खाना और टीवी समय',amount:5,kid:'both',time:'7:00 PM – 8:00 PM'},{id:'t12',en:'Special time with Mummy',hi:'मम्मी के साथ खास समय',amount:8,kid:'both',time:'8:00 PM – 8:30 PM'},{id:'t13',en:'Sleep on time without fuss',hi:'बिना नाटक समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'t14',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'t15',en:'Showed kindness without being asked',hi:'बिना कहे दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'t16',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'},{id:'t17',en:'Wrote / drew a thank-you note',hi:'धन्यवाद नोट लिखा / बनाया',amount:8,kid:'both',time:'Evening'}];}
 function defSchool(){return [{id:'s1',en:'Wake up on time',hi:'समय पर उठो',amount:5,kid:'both',time:'6:00 AM – 6:30 AM'},{id:'s2',en:'Get ready without reminder',hi:'बिना याद दिलाए तैयार हो',amount:8,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'s3',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'7:00 AM – 7:30 AM'},{id:'s4',en:'Bag packed & ready',hi:'बैग तैयार',amount:5,kid:'both',time:'7:30 AM – 7:45 AM'},{id:'s5',en:'Ate lunch properly at school',hi:'स्कूल में खाना ठीक से खाया',amount:5,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'s6',en:'No screen time before homework',hi:'होमवर्क से पहले कोई स्क्रीन नहीं',amount:10,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'s7',en:'Homework completed',hi:'होमवर्क पूरा किया',amount:15,kid:'both',time:'4:00 PM – 5:30 PM'},{id:'s8',en:'Reading for 15 minutes',hi:'15 मिनट पढ़ाई',amount:10,kid:'both',time:'5:30 PM – 5:45 PM'},{id:'s9',en:'Help at home after school',hi:'स्कूल के बाद घर में मदद',amount:8,kid:'both',time:'6:00 PM – 6:30 PM'},{id:'s10',en:'Bag packed for tomorrow',hi:'कल के लिए बैग तैयार',amount:5,kid:'both',time:'8:00 PM – 8:15 PM'},{id:'s11',en:'Sleep on time',hi:'समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'s12',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'s13',en:'Showed kindness',hi:'दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'s14',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'}];}
 
-document.querySelectorAll('.modal-bg').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.add('hidden');});});
+// ══════════════════════════════════════
+// QUIZ & COIN WALLET SYSTEM
+// ══════════════════════════════════════
+var quizQuestions = [];
+var quizCurrentIdx = 0;
+var quizScore = 0;
+var quizAnswered = false;
+var quizSpinning = false;
+var spinAnimFrame = null;
+var SPIN_PRIZES = [10, 20, 10, 50, 10, 30, 10, 100, 10, 20];
+var SPIN_COLORS = ['#7c3aed','#3b82f6','#ec4899','#f59e0b','#059669','#ef4444','#7c3aed','#fbbf24','#0ea5e9','#10b981'];
+
+function getTodayKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+
+function getUserAgeGroup(){
+  var p = currentUserProfile||{};
+  var name = (p.name||'').toLowerCase();
+  var linked = p.linkedKid||'';
+  if(linked==='dhruv'||name.indexOf('dhruv')>-1) return 'dhruv'; // 8-10
+  if(linked==='vedika'||name.indexOf('vedika')>-1) return 'vedika'; // 12-14
+  return 'adult'; // Mummy/Papa
+}
+
+function getQuizPrompt(ageGroup){
+  var difficulty = ageGroup==='dhruv'
+    ? 'easy (for 8-10 year old Indian child). Topics: basic maths, animals, fruits, colours, simple GK about India, body parts, simple science'
+    : ageGroup==='vedika'
+    ? 'medium-hard (for 12-14 year old Indian student). Topics: science, history, geography, maths, literature, GK, current affairs India'
+    : 'adult level general knowledge. Topics: history, science, geography, current affairs, literature, sports, technology';
+
+  return 'Generate exactly 5 multiple choice quiz questions of '+difficulty+'. Return ONLY a valid JSON array, no extra text, no markdown. Format: [{"q":"question text","options":["A","B","C","D"],"answer":0}] where answer is the index (0-3) of the correct option. Make questions fun, educational and interesting. Each question must be different topic.';
+}
+
+function initQuizTab(){
+  var uid = currentUser&&currentUser.uid;
+  if(!uid) return;
+  renderWallet();
+  renderQuizHistory();
+  // Show admin panel for admin/parent
+  var isAdmin = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  var ap = document.getElementById('quiz-admin-panel');
+  if(ap) ap.style.display = isAdmin?'block':'none';
+  if(isAdmin) renderAllQuizResults();
+  // Check if already done today
+  var todayKey = getTodayKey();
+  db.collection('quiz').doc(uid+'_'+todayKey).get().then(function(doc){
+    if(doc.exists && doc.data().completed){
+      document.getElementById('quiz-already-done').style.display='block';
+      document.getElementById('start-quiz-btn').style.display='none';
+    } else {
+      document.getElementById('quiz-already-done').style.display='none';
+      document.getElementById('start-quiz-btn').style.display='block';
+    }
+    document.getElementById('quiz-date-lbl').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  });
+}
+
+function renderWallet(){
+  var uid = currentUser&&currentUser.uid; if(!uid) return;
+  db.collection('wallets').doc(uid).get().then(function(doc){
+    var coins = doc.exists?(doc.data().coins||0):0;
+    document.getElementById('wallet-coins').textContent = coins+' coins';
+    document.getElementById('wallet-rupees').textContent = '= ₹'+(coins/20).toFixed(2);
+    // Quiz streak
+    var streak = doc.exists?(doc.data().quizStreak||0):0;
+    document.getElementById('quiz-streak-lbl').textContent = '🔥 Quiz streak: '+streak+' days';
+    // Today done count
+    var todayKey = getTodayKey();
+    db.collection('quiz').doc(uid+'_'+todayKey).get().then(function(qd){
+      var done = qd.exists?(qd.data().score||0):0;
+      var total = qd.exists&&qd.data().completed?5:0;
+      document.getElementById('quiz-today-lbl').textContent = 'Today: '+(qd.exists&&qd.data().completed?'5/5 ✅':'0/5');
+    });
+  });
+}
+
+function renderQuizHistory(){
+  var uid = currentUser&&currentUser.uid; if(!uid) return;
+  db.collection('quiz').where('uid','==',uid).orderBy('date','desc').limit(7).get().then(function(snap){
+    var el = document.getElementById('quiz-history');
+    if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz history yet. Start your first quiz! 🧠</div>';return;}
+    var html = '';
+    snap.forEach(function(doc){
+      var d = doc.data();
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">'+
+        '<span style="color:#374151;font-weight:600">'+new Date(d.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</span>'+
+        '<span style="color:var(--green);font-weight:700">₹'+d.score+' earned</span>'+
+        '<span style="color:#7c3aed;font-weight:700">🪙 +'+d.coinsWon+' coins</span>'+
+        '<span style="background:'+(d.score>=4?'#d1fae5':'#fef3c7')+';color:'+(d.score>=4?'#065f46':'#92400e')+';border-radius:50px;padding:2px 8px;font-weight:700">'+d.score+'/5</span>'+
+      '</div>';
+    });
+    el.innerHTML = html;
+  }).catch(function(){ document.getElementById('quiz-history').innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">History not available yet.</div>'; });
+}
+
+function renderAllQuizResults(){
+  db.collection('quiz').orderBy('date','desc').limit(20).get().then(function(snap){
+    var el = document.getElementById('quiz-all-results'); if(!el) return;
+    if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz results yet.</div>';return;}
+    var html='';
+    snap.forEach(function(doc){
+      var d=doc.data();
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:11px">'+
+        '<span style="font-weight:700;color:#374151">'+(d.userName||'User')+'</span>'+
+        '<span style="color:#6b7280">'+new Date(d.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</span>'+
+        '<span style="color:var(--green);font-weight:700">₹'+d.score+'</span>'+
+        '<span style="color:#7c3aed;font-weight:700">🪙'+d.coinsWon+'</span>'+
+        '<span style="background:'+(d.score>=4?'#d1fae5':'#fef3c7')+';color:'+(d.score>=4?'#065f46':'#92400e')+';border-radius:50px;padding:1px 7px;font-weight:700">'+d.score+'/5</span>'+
+      '</div>';
+    });
+    el.innerHTML=html;
+  }).catch(function(){});
+}
+
+function startQuiz(){
+  var ageGroup = getUserAgeGroup();
+  var prompt = getQuizPrompt(ageGroup);
+  // Show loading
+  document.getElementById('quiz-state-start').classList.add('hidden');
+  document.getElementById('quiz-state-question').classList.remove('hidden');
+  document.getElementById('q-text').textContent = '⏳ Generating your questions with AI...';
+  document.getElementById('q-options').innerHTML = '';
+  document.getElementById('q-next-btn').style.display='none';
+  document.getElementById('q-feedback').style.display='none';
+
+  // Call Claude API
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:prompt}]
+    })
+  }).then(function(r){return r.json();}).then(function(d){
+    var text = d.content&&d.content[0]&&d.content[0].text||'[]';
+    // Clean JSON
+    text = text.replace(/```json|```/g,'').trim();
+    try{
+      quizQuestions = JSON.parse(text);
+      if(!Array.isArray(quizQuestions)||quizQuestions.length===0) throw new Error('bad');
+      quizCurrentIdx = 0;
+      quizScore = 0;
+      showQuestion();
+    } catch(e){
+      // Fallback questions if AI fails
+      quizQuestions = getFallbackQuestions(ageGroup);
+      quizCurrentIdx=0; quizScore=0; showQuestion();
+    }
+  }).catch(function(){
+    quizQuestions = getFallbackQuestions(ageGroup);
+    quizCurrentIdx=0; quizScore=0; showQuestion();
+  });
+}
+
+function getFallbackQuestions(ageGroup){
+  if(ageGroup==='dhruv') return [
+    {q:'How many days are in a week?',options:['5','6','7','8'],answer:2},
+    {q:'What is the capital of India?',options:['Mumbai','Delhi','Chennai','Kolkata'],answer:1},
+    {q:'Which animal is known as the King of the Jungle?',options:['Tiger','Elephant','Lion','Cheetah'],answer:2},
+    {q:'What is 8 × 7?',options:['54','56','58','60'],answer:1},
+    {q:'How many colors are in a rainbow?',options:['5','6','7','8'],answer:2}
+  ];
+  if(ageGroup==='vedika') return [
+    {q:'Who wrote the national anthem of India?',options:['Bankim Chandra','Rabindranath Tagore','Mahatma Gandhi','Jawaharlal Nehru'],answer:1},
+    {q:'What is the chemical formula of water?',options:['H2O','CO2','O2','HO'],answer:0},
+    {q:'Which planet is closest to the Sun?',options:['Venus','Earth','Mars','Mercury'],answer:3},
+    {q:'What is the square root of 144?',options:['11','12','13','14'],answer:1},
+    {q:'In which year did India gain independence?',options:['1945','1946','1947','1948'],answer:2}
+  ];
+  return [
+    {q:'What is the currency of Japan?',options:['Yuan','Won','Yen','Peso'],answer:2},
+    {q:'Who painted the Mona Lisa?',options:['Picasso','Da Vinci','Rembrandt','Michelangelo'],answer:1},
+    {q:'What is the largest planet in our solar system?',options:['Saturn','Neptune','Jupiter','Uranus'],answer:2},
+    {q:'How many bones are in the human body?',options:['196','206','216','226'],answer:1},
+    {q:'What is the speed of light (approx)?',options:['200,000 km/s','300,000 km/s','400,000 km/s','500,000 km/s'],answer:1}
+  ];
+}
+
+var quizTimer = null;
+var quizTimeLeft = 10;
+
+function clearQuizTimer(){
+  if(quizTimer){ clearInterval(quizTimer); quizTimer=null; }
+}
+
+function startTimer(){
+  clearQuizTimer();
+  quizTimeLeft = 10;
+  updateTimerUI(10);
+  quizTimer = setInterval(function(){
+    quizTimeLeft--;
+    updateTimerUI(quizTimeLeft);
+    if(quizTimeLeft<=0){
+      clearQuizTimer();
+      if(!quizAnswered) timeUp();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(t){
+  var circle = document.getElementById('q-timer-circle');
+  var bar    = document.getElementById('q-timer-bar');
+  if(!circle||!bar) return;
+  circle.textContent = t;
+  bar.style.width = (t/10*100)+'%';
+  // Color: green→yellow→red
+  var color = t>6?'#22c55e':t>3?'#f59e0b':'#ef4444';
+  circle.style.background = color;
+  bar.style.background    = color;
+  // Pulse when low
+  if(t<=3) circle.style.transform='scale(1.15)';
+  else circle.style.transform='scale(1)';
+}
+
+function timeUp(){
+  if(quizAnswered) return;
+  quizAnswered = true;
+  var q = quizQuestions[quizCurrentIdx];
+  // Show correct answer
+  q.options.forEach(function(_,i){
+    var btn=document.getElementById('opt-'+i);
+    if(!btn) return;
+    btn.style.pointerEvents='none';
+    if(i===q.answer) btn.style.background='#d1fae5', btn.style.borderColor='#059669', btn.style.color='#065f46';
+  });
+  var fb=document.getElementById('q-feedback');
+  fb.style.display='block';
+  fb.style.background='#fee2e2';
+  fb.style.color='#991b1b';
+  fb.textContent='⏰ Time\'s up! The answer was: '+q.options[q.answer];
+  var nextBtn=document.getElementById('q-next-btn');
+  nextBtn.style.display='block';
+  nextBtn.textContent=quizCurrentIdx===quizQuestions.length-1?'🎰 See Results & Spin!':'Next Question →';
+}
+
+function showQuestion(){
+  var q = quizQuestions[quizCurrentIdx];
+  var total = quizQuestions.length;
+  document.getElementById('q-counter').textContent='Question '+(quizCurrentIdx+1)+'/'+total;
+  document.getElementById('q-score-lbl').textContent='Score: ₹'+quizScore;
+  document.getElementById('q-progress').style.width=((quizCurrentIdx/total)*100)+'%';
+  document.getElementById('q-dots').innerHTML=quizQuestions.map(function(_,i){
+    return '<div style="width:8px;height:8px;border-radius:50%;background:'+(i<quizCurrentIdx?'#86efac':i===quizCurrentIdx?'#fff':'rgba(255,255,255,.4)')+'"></div>';
+  }).join('');
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-feedback').style.display='none';
+  document.getElementById('q-next-btn').style.display='none';
+  quizAnswered=false;
+  document.getElementById('q-options').innerHTML=q.options.map(function(opt,i){
+    return '<button onclick="answerQuestion('+i+')" style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;text-align:left;background:#fff;color:#374151;cursor:pointer;transition:all .2s" id="opt-'+i+'">'+
+      '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#f3f4f6;text-align:center;line-height:22px;font-size:11px;font-weight:800;margin-right:8px">'+['A','B','C','D'][i]+'</span>'+opt+
+    '</button>';
+  }).join('');
+  // Start the 10 second timer
+  startTimer();
+}
+
+function answerQuestion(idx){
+  if(quizAnswered) return;
+  clearQuizTimer();
+  quizAnswered = true;
+  var q = quizQuestions[quizCurrentIdx];
+  var correct = idx === q.answer;
+  if(correct) quizScore++;
+  q.options.forEach(function(_,i){
+    var btn=document.getElementById('opt-'+i);
+    if(!btn) return;
+    btn.style.pointerEvents='none';
+    if(i===q.answer) btn.style.background='#d1fae5',btn.style.borderColor='#059669',btn.style.color='#065f46';
+    else if(i===idx&&!correct) btn.style.background='#fee2e2',btn.style.borderColor='#ef4444',btn.style.color='#991b1b';
+  });
+  var fb=document.getElementById('q-feedback');
+  fb.style.display='block';
+  fb.style.background=correct?'#d1fae5':'#fee2e2';
+  fb.style.color=correct?'#065f46':'#991b1b';
+  fb.textContent=correct?'✅ Correct! +₹1 ('+(quizTimeLeft)+'s remaining)':'❌ Wrong! The answer was: '+q.options[q.answer];
+  document.getElementById('q-score-lbl').textContent='Score: ₹'+quizScore;
+  var nextBtn=document.getElementById('q-next-btn');
+  nextBtn.style.display='block';
+  nextBtn.textContent=quizCurrentIdx===quizQuestions.length-1?'🎰 See Results & Spin!':'Next Question →';
+}
+
+function nextQuestion(){
+  clearQuizTimer();
+  quizCurrentIdx++;
+  if(quizCurrentIdx >= quizQuestions.length){
+    showSpin();
+  } else {
+    showQuestion();
+  }
+}
+
+function showSpin(){
+  clearQuizTimer();
+  document.getElementById('quiz-state-question').classList.add('hidden');
+  document.getElementById('quiz-state-spin').classList.remove('hidden');
+  document.getElementById('spin-score-msg').textContent = 'You scored ₹'+quizScore+' from '+quizQuestions.length+' questions!';
+  document.getElementById('spin-result').style.display='none';
+  document.getElementById('spin-btn').style.display='block';
+  drawWheel(0);
+}
+
+function drawWheel(rotation){
+  var canvas = document.getElementById('spin-wheel');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var cx=110, cy=110, r=105;
+  var slices = SPIN_PRIZES.length;
+  var arc = (2*Math.PI)/slices;
+  ctx.clearRect(0,0,220,220);
+  SPIN_PRIZES.forEach(function(prize,i){
+    var start = rotation + i*arc - Math.PI/2;
+    var end = start + arc;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle = SPIN_COLORS[i];
+    ctx.fill();
+    ctx.strokeStyle='#fff';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    // Label
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(start+arc/2);
+    ctx.textAlign='right';
+    ctx.fillStyle='#fff';
+    ctx.font='bold 13px sans-serif';
+    ctx.fillText('🪙'+prize, r-8, 5);
+    ctx.restore();
+  });
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(cx,cy,18,0,2*Math.PI);
+  ctx.fillStyle='#fff';
+  ctx.fill();
+  ctx.fillStyle='#7c3aed';
+  ctx.font='bold 11px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('SPIN',cx,cy+4);
+}
+
+var spinStartTime, spinDuration, spinStartAngle, spinEndAngle, spinCoins;
+function spinWheel(){
+  if(quizSpinning) return;
+  quizSpinning=true;
+  document.getElementById('spin-btn').style.display='none';
+  // Pick random prize
+  var prizeIdx = Math.floor(Math.random()*SPIN_PRIZES.length);
+  spinCoins = SPIN_PRIZES[prizeIdx];
+  // Calculate end angle so pointer lands on prize
+  var sliceAngle = (2*Math.PI)/SPIN_PRIZES.length;
+  var targetAngle = -(prizeIdx * sliceAngle) - sliceAngle/2;
+  spinStartAngle = 0;
+  spinEndAngle = targetAngle - (Math.PI*2*8); // 8 full rotations + target
+  spinDuration = 4000;
+  spinStartTime = null;
+  function animate(ts){
+    if(!spinStartTime) spinStartTime=ts;
+    var elapsed = ts-spinStartTime;
+    var progress = Math.min(elapsed/spinDuration,1);
+    // Ease out cubic
+    var ease = 1-Math.pow(1-progress,3);
+    var current = spinStartAngle + (spinEndAngle-spinStartAngle)*ease;
+    drawWheel(current);
+    if(progress<1){
+      spinAnimFrame=requestAnimationFrame(animate);
+    } else {
+      quizSpinning=false;
+      showSpinResult(spinCoins);
+    }
+  }
+  spinAnimFrame=requestAnimationFrame(animate);
+}
+
+function showSpinResult(coins){
+  var resultEl = document.getElementById('spin-result');
+  resultEl.style.display='block';
+  resultEl.innerHTML='🎉 You won <span style="color:#f59e0b">'+coins+' coins</span>! Added to your wallet!';
+  document.getElementById('spin-btn').style.display='none';
+  // Save to Firebase
+  saveQuizResult(quizScore, coins);
+}
+
+function skipSpin(){
+  saveQuizResult(quizScore, 0);
+}
+
+function saveQuizResult(score, coins){
+  var uid=currentUser&&currentUser.uid; if(!uid) return;
+  var todayKey=getTodayKey();
+  var p=currentUserProfile||{};
+  // Save quiz result
+  db.collection('quiz').doc(uid+'_'+todayKey).set({
+    uid:uid, userName:p.name||'User', score:score,
+    coinsWon:coins, date:new Date().toISOString(),
+    completed:true
+  }).then(function(){
+    // Update wallet
+    return db.collection('wallets').doc(uid).get();
+  }).then(function(doc){
+    var current = doc.exists?(doc.data().coins||0):0;
+    var currentStreak = doc.exists?(doc.data().quizStreak||0):0;
+    var lastDate = doc.exists?(doc.data().lastQuizDate||''):'' ;
+    var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    var yKey = yesterday.getFullYear()+'-'+(yesterday.getMonth()+1)+'-'+yesterday.getDate();
+    var newStreak = (lastDate===yKey||lastDate===todayKey) ? currentStreak+1 : 1;
+    return db.collection('wallets').doc(uid).set({
+      coins: current+coins,
+      quizStreak: newStreak,
+      lastQuizDate: todayKey,
+      totalEarned: (doc.exists?doc.data().totalEarned||0:0)+coins
+    });
+  }).then(function(){
+    // Add quiz earnings to task earnings
+    if(score>0 && data){
+      var kid = currentUserProfile&&currentUserProfile.linkedKid;
+      if(kid){
+        data.spent[kid] = Math.max(0,(data.spent[kid]||0)-0);
+        // Add quiz rupees as bonus
+        if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
+        if(!data.bonuses[kid]) data.bonuses[kid]=[];
+        data.bonuses[kid].push({amount:score,reason:'Quiz earnings 🧠',date:new Date().toLocaleDateString('en-IN')});
+        saveData();
+      }
+    }
+    showToast('🎉 ₹'+score+' earned + '+coins+' coins added to wallet!');
+    renderWallet();
+    renderQuizHistory();
+    // Go back to start state after 2s
+    setTimeout(function(){
+      document.getElementById('quiz-state-spin').classList.add('hidden');
+      document.getElementById('quiz-state-start').classList.remove('hidden');
+      document.getElementById('quiz-already-done').style.display='block';
+      document.getElementById('start-quiz-btn').style.display='none';
+    },3000);
+  }).catch(function(e){ showToast('Error saving: '+e.message); });
+}
+
+// ── REDEEM ──
+function openRedeemModal(){
+  var uid=currentUser&&currentUser.uid; if(!uid) return;
+  db.collection('wallets').doc(uid).get().then(function(doc){
+    var coins=doc.exists?(doc.data().coins||0):0;
+    document.getElementById('redeem-balance').textContent=coins+' coins';
+    document.getElementById('redeem-coins').value='';
+    document.getElementById('redeem-calc').textContent='= ₹0.00';
+    document.getElementById('modal-redeem').classList.remove('hidden');
+  });
+}
+
+function updateRedeemCalc(){
+  var c=parseInt(document.getElementById('redeem-coins').value)||0;
+  document.getElementById('redeem-calc').textContent='= ₹'+(c/20).toFixed(2);
+}
+
+function doRedeem(){
+  var uid=currentUser&&currentUser.uid; if(!uid) return;
+  var coins=parseInt(document.getElementById('redeem-coins').value)||0;
+  if(coins<20){showToast('Minimum 20 coins to redeem!');return;}
+  if(coins%20!==0){showToast('Must be a multiple of 20!');return;}
+  var rupees=coins/20;
+  db.collection('wallets').doc(uid).get().then(function(doc){
+    var current=doc.exists?(doc.data().coins||0):0;
+    if(coins>current){showToast('Not enough coins!');return;}
+    return db.collection('wallets').doc(uid).update({coins:current-coins}).then(function(){
+      // Add rupees to kid's savings
+      var kid=currentUserProfile&&currentUserProfile.linkedKid;
+      if(kid&&data){
+        if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
+        if(!data.bonuses[kid]) data.bonuses[kid]=[];
+        data.bonuses[kid].push({amount:rupees,reason:'Coin redemption 🪙 ('+coins+' coins)',date:new Date().toLocaleDateString('en-IN')});
+        saveData();
+      }
+      closeModal('modal-redeem');
+      showToast('✅ '+coins+' coins redeemed for ₹'+rupees+'!');
+      renderWallet();
+      showCelebration(kid||'dhruv');
+    });
+  }).catch(function(e){showToast('Error: '+e.message);});
+}
+
+// ── FIRESTORE INDEX FALLBACK ──
+// If quiz history fails due to missing index, handle gracefully
+
 
 // Register Service Worker for PWA
 if('serviceWorker' in navigator){
@@ -1159,3 +1754,4 @@ function installApp(){
 </script>
 </body>
 </html>
+<!-- This closing tag was already in file -->
