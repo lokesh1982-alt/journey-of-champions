@@ -2,8 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Journey of Champions — Dhruv & Vedika</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Journey of Champions</title>
+
+<!-- PWA Meta Tags -->
+<meta name="application-name" content="Journey of Champions">
+<meta name="apple-mobile-web-app-title" content="JoC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#6d28d9">
+<meta name="description" content="Journey of Champions — Dhruv & Vedika's daily tracker app">
+
+<!-- PWA Icons for iPhone -->
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
+<link rel="apple-touch-icon" sizes="167x167" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Splash screen color -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+/* Safe area for iPhone notch */
+body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+</style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--purple:#6d28d9;--purple-light:#ede9fe;--blue:#3b82f6;--blue-light:#dbeafe;--pink:#ec4899;--pink-light:#fce7f3;--green:#059669;--green-light:#d1fae5;--amber:#f59e0b;--amber-light:#fef3c7;--red:#ef4444;--gray:#6b7280;--bg:#f5f3ff}
@@ -625,7 +650,11 @@ function resetAllData(){data={version:4,tasks:{vacation:defVacation(),school:def
 function applyRolePermissions(){
   var p=currentUserProfile||{}, role=p.role||'child';
   var isAdmin=role==='admin', isParent=role==='parent'||isAdmin, isChild=role==='child';
-  document.getElementById('user-pill').textContent=(p.avatar||'👤')+' '+(p.name||'Me')+' ▾';
+  // Apply avatar to pill
+  var avatarHtml = p.photoURL
+    ? '<img src="'+p.photoURL+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:3px">'
+    : (p.avatar||'👤');
+  document.getElementById('user-pill').innerHTML = avatarHtml+' '+(p.name||'Me')+' ▾';
   document.getElementById('tab-admin').style.display=isAdmin?'block':'none';
   if(isChild&&p.linkedKid){
     selectedKid=p.linkedKid;
@@ -637,28 +666,113 @@ function applyRolePermissions(){
   ['add-task-btn','spend-btn','bonus-btn','del-folder-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isParent?'':'none';});
   document.getElementById('mode-vacation').style.pointerEvents=isParent?'auto':'none';
   document.getElementById('mode-school').style.pointerEvents=isParent?'auto':'none';
+  // Apply saved background theme
+  applyBgTheme(p.bgTheme||'default');
+}
+
+// ══ BACKGROUND THEMES ══
+var BG_THEMES = [
+  {id:'default',   name:'Purple Dream',  bg:'linear-gradient(135deg,#6d28d9,#4f46e5,#7c3aed)', header:'var(--purple)'},
+  {id:'blue',      name:'Ocean Blue',    bg:'linear-gradient(135deg,#1e40af,#0ea5e9,#38bdf8)',  header:'#1e40af'},
+  {id:'pink',      name:'Candy Pink',    bg:'linear-gradient(135deg,#be185d,#ec4899,#f9a8d4)',  header:'#be185d'},
+  {id:'green',     name:'Forest Green',  bg:'linear-gradient(135deg,#065f46,#059669,#34d399)',  header:'#065f46'},
+  {id:'orange',    name:'Sunset Orange', bg:'linear-gradient(135deg,#c2410c,#f97316,#fbbf24)',  header:'#c2410c'},
+  {id:'dark',      name:'Dark Mode',     bg:'linear-gradient(135deg,#111827,#1f2937,#374151)',  header:'#111827'},
+  {id:'sky',       name:'Sky Blue',      bg:'linear-gradient(135deg,#0369a1,#38bdf8,#e0f2fe)',  header:'#0369a1'},
+  {id:'rose',      name:'Rose Gold',     bg:'linear-gradient(135deg,#9f1239,#e11d48,#fda4af)',  header:'#9f1239'},
+  {id:'teal',      name:'Teal Fresh',    bg:'linear-gradient(135deg,#0f766e,#14b8a6,#99f6e4)',  header:'#0f766e'},
+  {id:'golden',    name:'Golden Hour',   bg:'linear-gradient(135deg,#92400e,#d97706,#fef3c7)',  header:'#92400e'},
+  {id:'dhruv',     name:'Dhruv Blue 🐯', bg:'linear-gradient(135deg,#1d4ed8,#3b82f6,#bfdbfe)', header:'#1d4ed8'},
+  {id:'vedika',    name:'Vedika Pink 🐼', bg:'linear-gradient(135deg,#9d174d,#ec4899,#fce7f3)', header:'#9d174d'},
+];
+
+function applyBgTheme(themeId){
+  var theme = BG_THEMES.find(function(t){return t.id===themeId;}) || BG_THEMES[0];
+  document.getElementById('screen-app').style.background = theme.bg;
+  document.getElementById('screen-app').style.minHeight = '100vh';
+  var header = document.querySelector('.header');
+  if(header) header.style.background = theme.header;
+}
+
+function saveBgTheme(themeId){
+  if(!currentUser) return;
+  currentUserProfile.bgTheme = themeId;
+  db.collection('users').doc(currentUser.uid).update({bgTheme: themeId}).then(function(){
+    applyBgTheme(themeId);
+    showToast('Theme saved! 🎨');
+  });
 }
 
 function showUserMenu(){
   var p=currentUserProfile||{};
+  var avatarContent = p.photoURL
+    ? '<img src="'+p.photoURL+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover">'
+    : '<div style="width:48px;height:48px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:24px">'+(p.avatar||'👤')+'</div>';
+
+  var themeGrid = BG_THEMES.map(function(t){
+    var isActive = (p.bgTheme||'default')===t.id;
+    return '<div onclick="saveBgTheme(\''+t.id+'\')" style="cursor:pointer;border-radius:10px;overflow:hidden;border:3px solid '+(isActive?'#7c3aed':'transparent')+';transition:all .2s">'+
+      '<div style="height:36px;background:'+t.bg+'"></div>'+
+      '<div style="font-size:9px;font-weight:700;text-align:center;padding:3px;color:#374151;background:#fff">'+t.name+'</div>'+
+    '</div>';
+  }).join('');
+
   var m=document.createElement('div');
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:16px';
-  m.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;animation:pop .2s ease">'+
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f3f4f6">'+
-      '<div style="width:48px;height:48px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:24px">'+(p.avatar||'👤')+'</div>'+
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:16px;overflow-y:auto';
+  m.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;animation:pop .2s ease;margin-top:auto">'+
+    // Profile header
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f3f4f6">'+
+      '<div style="position:relative;cursor:pointer" id="avatar-wrap" title="Tap to change photo">'+
+        avatarContent+
+        '<div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">📷</div>'+
+      '</div>'+
       '<div>'+
         '<div style="font-size:16px;font-weight:800;color:#111">'+(p.name||'User')+'</div>'+
         '<div style="font-size:11px;color:#9ca3af">'+(p.role==='admin'?'👑 Admin':p.role==='parent'?'👨‍👩‍ Parent':'🧒 Child')+'</div>'+
         '<div style="font-size:11px;color:#9ca3af">'+(currentUser&&currentUser.email||'')+'</div>'+
       '</div>'+
     '</div>'+
-    '<button id="btn-reset-pw" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;text-align:left">🔑 Change Password</button>'+
+    // Background theme picker
+    '<div style="margin-bottom:16px">'+
+      '<div style="font-size:12px;font-weight:800;color:#374151;margin-bottom:8px">🎨 My Background Theme</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="theme-grid">'+themeGrid+'</div>'+
+    '</div>'+
+    // Action buttons
+    '<button id="btn-change-photo" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;text-align:left">📷 Change Profile Photo</button>'+
+    '<button id="btn-reset-pw" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#dbeafe;color:#1d4ed8;cursor:pointer;margin-bottom:8px;text-align:left">🔑 Change Password</button>'+
     '<button id="btn-sign-out" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:pointer;margin-bottom:8px;text-align:left">🚪 Sign Out</button>'+
     '<button id="btn-close-menu" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#f3f4f6;color:#374151;cursor:pointer;text-align:left">✕ Close</button>'+
+    // Hidden file input for photo
+    '<input type="file" id="avatar-file-input" accept="image/*" style="display:none">'+
   '</div>';
-  m.querySelector('#btn-sign-out').onclick=function(){m.remove();doLogout();};
-  m.querySelector('#btn-close-menu').onclick=function(){m.remove();};
-  m.querySelector('#btn-reset-pw').onclick=function(){
+
+  // Photo upload handler
+  function triggerPhotoUpload(){
+    m.querySelector('#avatar-file-input').click();
+  }
+  m.querySelector('#avatar-wrap').onclick = triggerPhotoUpload;
+  m.querySelector('#btn-change-photo').onclick = triggerPhotoUpload;
+  m.querySelector('#avatar-file-input').onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var photoURL = ev.target.result;
+      currentUserProfile.photoURL = photoURL;
+      db.collection('users').doc(currentUser.uid).update({photoURL: photoURL}).then(function(){
+        // Update avatar in menu
+        var wrap = m.querySelector('#avatar-wrap');
+        if(wrap) wrap.innerHTML = '<img src="'+photoURL+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover"><div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">📷</div>';
+        // Update pill
+        document.getElementById('user-pill').innerHTML = '<img src="'+photoURL+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:3px"> '+(p.name||'Me')+' ▾';
+        showToast('Photo updated! 📷');
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  m.querySelector('#btn-sign-out').onclick = function(){m.remove();doLogout();};
+  m.querySelector('#btn-close-menu').onclick = function(){m.remove();};
+  m.querySelector('#btn-reset-pw').onclick = function(){
     m.remove();
     if(!currentUser||!currentUser.email){showToast('No email found!');return;}
     if(!confirm('Send password reset email to '+currentUser.email+'?'))return;
@@ -676,7 +790,10 @@ function renderUsersList(){
     snap.forEach(function(doc){
       var u=doc.data();
       var rc=u.role==='admin'?['#ede9fe','#5b21b6']:u.role==='parent'?['#dbeafe','#1d4ed8']:['#d1fae5','#065f46'];
-      html+='<div class="user-list-item"><div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px">'+(u.avatar||'👤')+'</div>'+
+      var avatarHtml = u.photoURL
+        ? '<img src="'+u.photoURL+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">'
+        : '<div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(u.avatar||'👤')+'</div>';
+      html+='<div class="user-list-item">'+avatarHtml+
         '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+u.name+'</div><div style="font-size:11px;color:#9ca3af">'+u.email+(u.linkedKid?' · linked: '+u.linkedKid:'')+'</div></div>'+
         '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑 Admin':u.role==='parent'?'Parent':'🧒 Child')+'</span>'+
         (doc.id!==currentUser.uid?'<button onclick="deleteUser(\''+doc.id+'\')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>':'')+
@@ -725,7 +842,18 @@ var DAYS_HI=['सोम','मंगल','बुध','गुरु','शुक्
 function dayKey(kid,day,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-day)+(off*7));return kid+'_'+mode+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function getWeekStartLabel(off){var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-1)+(off*7));var e=new Date(d);e.setDate(d.getDate()+6);var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' – '+e.getDate()+' '+m[e.getMonth()];}
 function getChecks(kid,day,wOff){return(data&&data.checks&&data.checks[kid])?data.checks[kid][dayKey(kid,day,wOff)]||{}:{};}
-function toggleCheck(kid,day,taskId,amount){if(!data)return;var key=dayKey(kid,day,weekOffset);if(!data.checks[kid][key])data.checks[kid][key]={};var was=data.checks[kid][key][taskId];data.checks[kid][key][taskId]=!was;saveData();if(!was){showCoin(amount);setTimeout(function(){checkCelebration(kid);},100);}render();}
+function toggleCheck(kid,day,taskId,amount){
+  if(!data)return;
+  var role=currentUserProfile&&currentUserProfile.role;
+  if(role==='child'){showToast('Only Mummy or Papa can tick tasks! 🔒');return;}
+  var key=dayKey(kid,day,weekOffset);
+  if(!data.checks[kid][key])data.checks[kid][key]={};
+  var was=data.checks[kid][key][taskId];
+  data.checks[kid][key][taskId]=!was;
+  saveData();
+  if(!was){showCoin(amount);setTimeout(function(){checkCelebration(kid);},100);}
+  render();
+}
 function getEarned(kid,day,wOff){var ch=getChecks(kid,day,wOff);var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});var tot=0;tasks.forEach(function(t){if(ch[t.id])tot+=t.amount;});return tot;}
 function getWeekEarned(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var tot=0;for(var d=1;d<=7;d++)tot+=getEarned(kid,d,off);return tot;}
 function getSpent(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;if(!data)return 0;return off===0?(data.spent[kid]||0):(data['spent_'+kid+'_'+off]||0);}
@@ -782,12 +910,21 @@ function renderTasks(){
   var list=document.getElementById('task-list'),tasks=getTasks(),ch=getChecks(selectedKid,selectedDay,weekOffset);
   var isFuture=weekOffset===0&&selectedDay>today;
   var isParent=currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  var isChild=currentUserProfile&&currentUserProfile.role==='child';
   if(tasks.length===0){list.innerHTML='<div style="text-align:center;padding:14px;font-size:12px;color:var(--gray)">No tasks yet. Tap + Add!</div>';return;}
   list.innerHTML=tasks.map(function(t){
     var done=!!ch[t.id],timeStr=t.time?'<div class="task-time">⏰ '+t.time+'</div>':'';
-    var fn=isFuture?'showToast(\'Future day!\')':'toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    // Children cannot tick tasks — show lock icon instead
+    var fn = isChild
+      ? 'showToast(\'Only Mummy or Papa can tick tasks! 🔒\')'
+      : isFuture
+        ? 'showToast(\'Future day!\')'
+        : 'toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    var checkStyle = isChild
+      ? 'cursor:not-allowed;opacity:.6;'
+      : '';
     return '<div class="task-item'+(done?' done':'')+'">'+
-      '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'">'+(done?'✓':'')+'</div>'+
+      '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'" style="'+checkStyle+'">'+(done?'✓':(isChild?'🔒':''))+'</div>'+
       '<div class="task-info" onclick="'+fn+'"><div class="task-name">'+t.en+'</div><div class="task-name-hi">'+t.hi+'</div>'+timeStr+'</div>'+
       '<div class="task-amount">+₹'+t.amount+'</div>'+
       (isParent?'<div class="task-actions"><button class="task-act-btn" style="background:#ede9fe" onclick="openEditTask(\''+t.id+'\')">✏️</button><button class="task-act-btn" style="background:#fee2e2" onclick="deleteTask(\''+t.id+'\')">🗑️</button></div>':'')+
@@ -978,6 +1115,47 @@ function defVacation(){return [{id:'t1',en:'Wake up on time & freshen up',hi:'�
 function defSchool(){return [{id:'s1',en:'Wake up on time',hi:'समय पर उठो',amount:5,kid:'both',time:'6:00 AM – 6:30 AM'},{id:'s2',en:'Get ready without reminder',hi:'बिना याद दिलाए तैयार हो',amount:8,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'s3',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'7:00 AM – 7:30 AM'},{id:'s4',en:'Bag packed & ready',hi:'बैग तैयार',amount:5,kid:'both',time:'7:30 AM – 7:45 AM'},{id:'s5',en:'Ate lunch properly at school',hi:'स्कूल में खाना ठीक से खाया',amount:5,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'s6',en:'No screen time before homework',hi:'होमवर्क से पहले कोई स्क्रीन नहीं',amount:10,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'s7',en:'Homework completed',hi:'होमवर्क पूरा किया',amount:15,kid:'both',time:'4:00 PM – 5:30 PM'},{id:'s8',en:'Reading for 15 minutes',hi:'15 मिनट पढ़ाई',amount:10,kid:'both',time:'5:30 PM – 5:45 PM'},{id:'s9',en:'Help at home after school',hi:'स्कूल के बाद घर में मदद',amount:8,kid:'both',time:'6:00 PM – 6:30 PM'},{id:'s10',en:'Bag packed for tomorrow',hi:'कल के लिए बैग तैयार',amount:5,kid:'both',time:'8:00 PM – 8:15 PM'},{id:'s11',en:'Sleep on time',hi:'समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'s12',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'s13',en:'Showed kindness',hi:'दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'s14',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'}];}
 
 document.querySelectorAll('.modal-bg').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.add('hidden');});});
+
+// Register Service Worker for PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/journey-of-champions/sw.js')
+      .then(function(reg){ console.log('SW registered'); })
+      .catch(function(err){ console.log('SW failed:', err); });
+  });
+}
+
+// PWA Install prompt for Android
+var deferredPrompt;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install banner after login
+  setTimeout(function(){
+    if(deferredPrompt && document.getElementById('screen-app').classList.contains('active')){
+      showInstallBanner();
+    }
+  }, 3000);
+});
+
+function showInstallBanner(){
+  if(document.getElementById('install-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 16px;border-radius:50px;font-size:12px;font-weight:700;z-index:400;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fade .3s ease;white-space:nowrap';
+  banner.innerHTML = '📱 Install app on your phone! <button onclick="installApp()" style="background:#7c3aed;border:none;border-radius:50px;padding:5px 12px;color:#fff;font-size:11px;font-weight:800;cursor:pointer">Install</button><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:#9ca3af;cursor:pointer;font-size:14px">✕</button>';
+  document.body.appendChild(banner);
+  setTimeout(function(){ if(banner.parentElement) banner.remove(); }, 8000);
+}
+
+function installApp(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(){ deferredPrompt=null; });
+  }
+  var b = document.getElementById('install-banner');
+  if(b) b.remove();
+}
 </script>
 </body>
 </html>
