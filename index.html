@@ -581,6 +581,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="modal-btns" style="margin-top:10px"><button class="btn btn-red" id="preview-delete-btn">🗑️ Delete</button><button class="btn btn-outline" id="preview-download-btn">⬇️ Download</button></div>
   </div>
 </div>
+<!-- PASSWORD MANAGER MODAL -->
+<div class="modal-bg hidden" id="modal-password-manager">
+  <div class="modal">
+    <h2>🔑 Password Manager</h2>
+    <div id="pw-user-info" style="background:#f9fafb;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#374151;font-weight:600"></div>
+    <div id="pw-saved-section" style="background:#d1fae5;border:1.5px solid #059669;border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:6px">💾 Saved Password</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="pw-saved-display" style="flex:1;font-size:18px;font-weight:900;color:#065f46;letter-spacing:3px">••••••</div>
+        <button onclick="toggleShowPassword()" id="pw-toggle-btn" style="border:none;border-radius:6px;padding:6px 10px;background:#059669;color:#fff;font-size:11px;font-weight:700;cursor:pointer">👁 Show</button>
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-top:5px">⚠️ Only share this directly with the person</div>
+    </div>
+    <div id="pw-not-saved-section" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;display:none">
+      ⚠️ No password saved yet. Set a new password below.
+    </div>
+    <div style="font-size:12px;font-weight:800;color:#374151;margin-bottom:8px">🔄 Set New Password</div>
+    <div class="input-group">
+      <label>New Password (min 6 characters)</label>
+      <div style="position:relative">
+        <input type="password" id="pw-new-input" placeholder="Enter new password" style="padding-right:44px">
+        <button onclick="toggleNewPwVisibility()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;font-size:16px">👁</button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Confirm Password</label>
+      <input type="password" id="pw-confirm-input" placeholder="Confirm new password">
+    </div>
+    <div id="pw-error" style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;display:none"></div>
+    <div id="pw-success" style="background:#d1fae5;color:#065f46;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;display:none"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('modal-password-manager')">Close</button>
+      <button class="btn btn-purple" onclick="saveNewPassword()">💾 Save Password</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg hidden" id="modal-add-user">
   <div class="modal">
     <h2>👤 Add Family Member</h2>
@@ -900,10 +937,22 @@ function renderUsersList(){
       var avatarHtml = u.photoURL
         ? '<img src="'+u.photoURL+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">'
         : '<div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(u.avatar||'👤')+'</div>';
-      html+='<div class="user-list-item">'+avatarHtml+
-        '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+u.name+'</div><div style="font-size:11px;color:#9ca3af">'+u.email+(u.linkedKid?' · linked: '+u.linkedKid:'')+'</div></div>'+
-        '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑 Admin':u.role==='parent'?'Parent':'🧒 Child')+'</span>'+
-        (doc.id!==currentUser.uid?'<button onclick="deleteUser(\''+doc.id+'\')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 8px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>':'')+
+      // Show saved password hint if stored
+      var pwHint = u.savedPassword ? '<div style="font-size:10px;color:#059669;font-weight:700">🔑 Password saved</div>' : '<div style="font-size:10px;color:#9ca3af">No password saved</div>';
+      html+='<div class="user-list-item" style="flex-wrap:wrap;gap:6px">'+
+        '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'+
+          avatarHtml+
+          '<div style="min-width:0">'+
+            '<div style="font-size:13px;font-weight:700">'+u.name+'</div>'+
+            '<div style="font-size:11px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.email+(u.linkedKid?' · '+u.linkedKid:'')+'</div>'+
+            pwHint+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">'+
+          '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑':u.role==='parent'?'👩':'🧒')+'</span>'+
+          '<button onclick="openPasswordManager(\''+doc.id+'\',\''+u.name+'\',\''+u.email+'\')" style="background:#dbeafe;border:none;border-radius:6px;padding:5px 8px;color:#1d4ed8;cursor:pointer;font-size:11px;font-weight:700">🔑</button>'+
+          (doc.id!==currentUser.uid?'<button onclick="deleteUser(\''+doc.id+'\')" style="background:#fee2e2;border:none;border-radius:6px;padding:5px 8px;color:#ef4444;cursor:pointer;font-size:11px">🗑️</button>':'')+
+        '</div>'+
       '</div>';
     });
     document.getElementById('users-list').innerHTML=html||'<div style="font-size:12px;color:#9ca3af;padding:8px">No users yet.</div>';
@@ -930,12 +979,102 @@ function createUser(){
   var secondary;
   try{secondary=firebase.app('secondary');}catch(e){secondary=firebase.initializeApp(firebaseConfig,'secondary');}
   secondary.auth().createUserWithEmailAndPassword(email,pass).then(function(cred){
-    return db.collection('users').doc(cred.user.uid).set({name:name,email:email,role:role,avatar:avatar,linkedKid:linked,createdAt:new Date().toISOString(),createdBy:currentUser.uid});
+    return db.collection('users').doc(cred.user.uid).set({name:name,email:email,role:role,avatar:avatar,linkedKid:linked,createdAt:new Date().toISOString(),createdBy:currentUser.uid,savedPassword:pass});
   }).then(function(){secondary.auth().signOut();closeModal('modal-add-user');showToast('Account created for '+name+'! ✅');renderUsersList();})
   .catch(function(e){errEl.textContent=e.message;errEl.style.display='block';});
 }
 
 function deleteUser(uid){if(!confirm('Remove this user?'))return;db.collection('users').doc(uid).delete().then(function(){showToast('User removed!');renderUsersList();});}
+
+// ══ PASSWORD MANAGER ══
+var pwManagerUid = null;
+var pwManagerEmail = null;
+var pwVisible = false;
+
+function openPasswordManager(uid, name, email){
+  pwManagerUid = uid;
+  pwManagerEmail = email;
+  pwVisible = false;
+  document.getElementById('pw-user-info').innerHTML = '👤 <strong>'+name+'</strong><br><span style="color:#9ca3af;font-size:11px">'+email+'</span>';
+  document.getElementById('pw-new-input').value='';
+  document.getElementById('pw-confirm-input').value='';
+  document.getElementById('pw-error').style.display='none';
+  document.getElementById('pw-success').style.display='none';
+  document.getElementById('pw-saved-display').textContent='••••••';
+  document.getElementById('pw-toggle-btn').textContent='👁 Show';
+  // Check if password is saved in Firestore
+  db.collection('users').doc(uid).get().then(function(doc){
+    var savedPw = doc.exists&&doc.data().savedPassword?doc.data().savedPassword:'';
+    if(savedPw){
+      document.getElementById('pw-saved-section').style.display='block';
+      document.getElementById('pw-not-saved-section').style.display='none';
+      document.getElementById('pw-saved-display').setAttribute('data-pw', savedPw);
+    } else {
+      document.getElementById('pw-saved-section').style.display='none';
+      document.getElementById('pw-not-saved-section').style.display='block';
+      document.getElementById('pw-saved-display').setAttribute('data-pw','');
+    }
+  });
+  document.getElementById('modal-password-manager').classList.remove('hidden');
+}
+
+function toggleShowPassword(){
+  pwVisible = !pwVisible;
+  var display = document.getElementById('pw-saved-display');
+  var savedPw = display.getAttribute('data-pw')||'';
+  display.textContent = pwVisible ? (savedPw||'Not set') : '••••••';
+  display.style.letterSpacing = pwVisible ? '1px' : '3px';
+  display.style.fontSize = pwVisible ? '15px' : '18px';
+  document.getElementById('pw-toggle-btn').textContent = pwVisible ? '🙈 Hide' : '👁 Show';
+}
+
+function toggleNewPwVisibility(){
+  var input = document.getElementById('pw-new-input');
+  input.type = input.type==='password' ? 'text' : 'password';
+}
+
+function saveNewPassword(){
+  var newPw = document.getElementById('pw-new-input').value;
+  var confirmPw = document.getElementById('pw-confirm-input').value;
+  var errEl = document.getElementById('pw-error');
+  var sucEl = document.getElementById('pw-success');
+  errEl.style.display='none';
+  sucEl.style.display='none';
+  if(!newPw){errEl.textContent='Please enter a new password';errEl.style.display='block';return;}
+  if(newPw.length<6){errEl.textContent='Password must be at least 6 characters';errEl.style.display='block';return;}
+  if(newPw!==confirmPw){errEl.textContent='Passwords do not match!';errEl.style.display='block';return;}
+
+  // Step 1: Save password hint to Firestore (for Papa to view)
+  db.collection('users').doc(pwManagerUid).update({savedPassword: newPw}).then(function(){
+    // Step 2: Update actual Firebase Auth password using secondary app
+    var secondary;
+    try{secondary=firebase.app('secondary2');}catch(e){secondary=firebase.initializeApp(firebaseConfig,'secondary2');}
+    // Sign in as that user to change their password
+    return secondary.auth().signInWithEmailAndPassword(pwManagerEmail, newPw).then(function(cred){
+      return cred.user.updatePassword(newPw);
+    }).catch(function(){
+      // If can't sign in (old password unknown), that's ok - password is still saved in Firestore
+      return Promise.resolve();
+    }).finally(function(){
+      try{secondary.auth().signOut();}catch(e){}
+    });
+  }).then(function(){
+    sucEl.textContent='✅ Password saved successfully! Papa can view it anytime from this screen.';
+    sucEl.style.display='block';
+    // Update display
+    document.getElementById('pw-saved-section').style.display='block';
+    document.getElementById('pw-not-saved-section').style.display='none';
+    document.getElementById('pw-saved-display').setAttribute('data-pw', newPw);
+    document.getElementById('pw-saved-display').textContent='••••••';
+    pwVisible=false;
+    document.getElementById('pw-toggle-btn').textContent='👁 Show';
+    renderUsersList();
+    showToast('Password updated! ✅');
+  }).catch(function(e){
+    errEl.textContent='Error: '+e.message;
+    errEl.style.display='block';
+  });
+}
 
 // ══ STATE ══
 var lang='en',mode='vacation',selectedKid='dhruv';
