@@ -164,6 +164,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .coin-pop{position:fixed;pointer-events:none;font-size:18px;animation:coin .7s ease forwards;z-index:200}
 .confetti-piece{position:fixed;width:10px;height:10px;border-radius:2px;pointer-events:none;animation:confetti .9s ease forwards;z-index:500}
 .celebrate-msg{position:fixed;top:50%;left:50%;background:#fff;border-radius:20px;padding:24px 32px;text-align:center;z-index:400;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:celebrate-pop .4s ease}
+.task-locked{opacity:.8;background:#fffbeb!important}
+.game-card:hover{border-color:#7c3aed!important;transform:scale(1.02);box-shadow:0 4px 14px rgba(109,40,217,.15)}
+.game-card:active{transform:scale(.97)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;z-index:300;animation:fade .3s ease;white-space:nowrap}
 .photo-grid-files{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px}
 .file-thumb{cursor:pointer;border-radius:9px;border:1px solid #e5e7eb;overflow:hidden;background:#f9fafb}
@@ -264,6 +267,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="nav-tabs">
     <button class="nav-tab active" id="tab-home" onclick="switchTab('home')">🏠 Home</button>
     <button class="nav-tab" id="tab-quiz" onclick="switchTab('quiz')">🧠 Quiz</button>
+    <button class="nav-tab" id="tab-kids" onclick="switchTab('kids')">🎮 Kids</button>
     <button class="nav-tab" id="tab-photos" onclick="switchTab('photos')">📁 Files</button>
     <button class="nav-tab" id="tab-report" onclick="switchTab('report')">📊 Report</button>
     <button class="nav-tab" id="tab-admin" onclick="switchTab('admin')" style="display:none">⚙️ Admin</button>
@@ -308,7 +312,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="section-card">
         <div class="section-head" id="tasks-head" style="background:var(--blue)">
           <div><div class="section-title" id="tasks-title">Dhruv's Tasks</div><div class="section-sub" id="tasks-sub">Tap to complete</div></div>
-          <button class="btn btn-sm" id="add-task-btn" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="openAddTask()">+ Add</button>
+          <div style="display:flex;gap:5px;align-items:center">
+            <button class="btn btn-sm" id="lock-day-btn" style="background:rgba(255,255,255,.2);color:#fff;border:none;display:none" onclick="toggleDayLock()">🔒 Lock Day</button>
+            <button class="btn btn-sm" id="add-task-btn" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="openAddTask()">+ Add</button>
+          </div>
         </div>
         <div class="section-body" id="task-list"></div>
       </div>
@@ -452,6 +459,78 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
+  <!-- KIDS ZONE TAB -->
+  <div id="view-kids" class="hidden">
+
+    <!-- Header with timer -->
+    <div style="background:linear-gradient(135deg,#f59e0b,#ef4444,#ec4899);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:18px;font-weight:900">🎮 Kids Zone!</div>
+          <div style="font-size:11px;opacity:.85;margin-top:1px">Dhruv 🐯 & Vedika 🐼</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;opacity:.8">Today's time left</div>
+          <div style="font-size:22px;font-weight:900" id="kz-timer-display">60:00</div>
+        </div>
+      </div>
+      <!-- Time bar -->
+      <div style="background:rgba(255,255,255,.25);border-radius:50px;height:8px;overflow:hidden;margin-bottom:8px">
+        <div id="kz-timer-bar" style="height:8px;background:#fff;border-radius:50px;transition:width 1s linear;width:100%"></div>
+      </div>
+      <!-- Coin progress -->
+      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:12px;font-weight:700">🪙 Today's coins earned</div>
+        <div style="font-size:14px;font-weight:900" id="kz-coins-display">0 / 60</div>
+      </div>
+    </div>
+
+    <!-- Time limit reached -->
+    <div id="kz-time-up" style="display:none;background:#fee2e2;border:2px solid #ef4444;border-radius:14px;padding:20px;text-align:center;margin-bottom:12px">
+      <div style="font-size:40px;margin-bottom:8px">⏰</div>
+      <div style="font-size:16px;font-weight:900;color:#991b1b;margin-bottom:4px">Time's up for today!</div>
+      <div style="font-size:13px;color:#991b1b;margin-bottom:12px">You've used your 1 hour of Kids Zone for today.<br>Come back tomorrow for more fun! 😊</div>
+      <div style="font-size:13px;font-weight:700;color:#059669" id="kz-coins-earned-msg">🪙 You earned 0 coins today!</div>
+    </div>
+
+    <!-- Game selector -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px" id="kids-game-menu">
+      <div onclick="startGame('memory')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
+        <div style="font-size:32px;margin-bottom:6px">🃏</div>
+        <div style="font-size:13px;font-weight:800;color:#111">Memory Cards</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">Match the pairs! +10🪙</div>
+      </div>
+      <div onclick="startGame('puzzle')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
+        <div style="font-size:32px;margin-bottom:6px">🧩</div>
+        <div style="font-size:13px;font-weight:800;color:#111">Number Puzzle</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">Slide to solve! +15🪙</div>
+      </div>
+      <div onclick="startGame('wordsearch')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
+        <div style="font-size:32px;margin-bottom:6px">🔤</div>
+        <div style="font-size:13px;font-weight:800;color:#111">Word Search</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">Find all words! +20🪙</div>
+      </div>
+      <div onclick="startGame('tictactoe')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
+        <div style="font-size:32px;margin-bottom:6px">⭕</div>
+        <div style="font-size:13px;font-weight:800;color:#111">Tic Tac Toe</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">Play 3 rounds! +5🪙</div>
+      </div>
+    </div>
+
+    <!-- Game area -->
+    <div id="kids-game-area" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:800;color:#111" id="game-title">Game</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="font-size:11px;font-weight:700;color:#f59e0b" id="game-coin-indicator"></div>
+          <button onclick="exitGame()" style="border:none;border-radius:50px;padding:6px 14px;background:#fee2e2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer">✕ Exit</button>
+        </div>
+      </div>
+      <div id="game-content"></div>
+    </div>
+
+  </div>
+
   <div id="view-photos" class="hidden">
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn" id="pkid-dhruv" style="flex:1;background:var(--blue);color:#fff" onclick="setPhotoKid('dhruv')">🐯 Dhruv</button>
@@ -483,6 +562,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div style="flex:1;text-align:center"><div style="font-size:13px;font-weight:800;color:#374151" id="report-week-label">This week</div><div style="font-size:10px;color:#9ca3af">Tap arrows for past weeks</div></div>
       <button onclick="changeReportWeek(1)" id="report-next-btn" style="background:var(--purple-light);border:none;border-radius:50%;width:30px;height:30px;color:var(--purple);font-size:15px;cursor:pointer;opacity:.3">›</button>
     </div>
+
+    <!-- SMART BEHAVIOUR ANALYSIS — Parents only -->
+    <div id="behaviour-section" style="display:none">
+      <div style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#fff">🧠 Smart Behaviour Analysis</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">AI-powered parenting insights</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="generateBehaviourReport('dhruv')" style="border:none;border-radius:50px;padding:6px 12px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;cursor:pointer">🐯 Dhruv</button>
+            <button onclick="generateBehaviourReport('vedika')" style="border:none;border-radius:50px;padding:6px 12px;font-size:11px;font-weight:700;background:#ec4899;color:#fff;cursor:pointer">🐼 Vedika</button>
+          </div>
+        </div>
+        <div id="behaviour-loading" style="display:none;text-align:center;padding:16px">
+          <div style="font-size:24px;margin-bottom:8px">🧠</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.8)">AI is analysing behaviour patterns...</div>
+          <div style="margin-top:10px;height:4px;background:rgba(255,255,255,.2);border-radius:50px;overflow:hidden">
+            <div id="behaviour-progress-bar" style="height:4px;background:#a78bfa;border-radius:50px;width:0%;transition:width 3s ease"></div>
+          </div>
+        </div>
+        <div id="behaviour-report" style="display:none"></div>
+        <div id="behaviour-placeholder" style="text-align:center;padding:12px;color:rgba(255,255,255,.6);font-size:12px">
+          Tap 🐯 Dhruv or 🐼 Vedika to generate their smart behaviour report
+        </div>
+      </div>
+    </div>
+
     <div style="background:#1a5c3a;border-radius:12px;padding:12px;margin-bottom:10px;border:3px solid #0d3d26">
       <div style="font-size:10px;font-weight:700;color:#86efac;margin-bottom:5px">📢 TEACH-E SAYS</div>
       <div id="teachE-text" style="font-size:12px;color:#f0fdf4;line-height:1.7;min-height:40px">Tap a button to hear Teach-E!</div>
@@ -1180,28 +1287,70 @@ function renderDays(){
   document.getElementById('today-earned-lbl').textContent='₹'+getEarned(selectedKid,selectedDay,weekOffset);
 }
 
+function getDayLockKey(kid, day, wOff){
+  return 'lock_'+dayKey(kid, day, wOff);
+}
+function isDayLocked(kid, day, wOff){
+  if(!data) return false;
+  return !!data[getDayLockKey(kid, day, wOff)];
+}
+
+function toggleDayLock(){
+  if(!data) return;
+  var isAdmin = currentUserProfile&&currentUserProfile.role==='admin';
+  var lockKey = getDayLockKey(selectedKid, selectedDay, weekOffset);
+  var locked = !!data[lockKey];
+  if(locked && !isAdmin){showToast('Only Admin (Papa) can unlock a day! 🔒');return;}
+  data[lockKey] = !locked;
+  saveData();
+  render();
+  showToast(data[lockKey]?'Day locked! 🔒 No more edits.':'Day unlocked! ✅ Edits allowed.');
+}
+
 function renderTasks(){
   var list=document.getElementById('task-list'),tasks=getTasks(),ch=getChecks(selectedKid,selectedDay,weekOffset);
   var isFuture=weekOffset===0&&selectedDay>today;
   var isParent=currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  var isAdmin=currentUserProfile&&currentUserProfile.role==='admin';
   var isChild=currentUserProfile&&currentUserProfile.role==='child';
+  var locked=isDayLocked(selectedKid,selectedDay,weekOffset);
+
+  // Update lock button
+  var lockBtn=document.getElementById('lock-day-btn');
+  if(lockBtn){
+    lockBtn.style.display=isParent&&!isFuture?'block':'none';
+    lockBtn.textContent=locked?'🔓 Unlock Day':'🔒 Lock Day';
+    lockBtn.style.background=locked?'rgba(239,68,68,.3)':'rgba(255,255,255,.2)';
+  }
+
   if(tasks.length===0){list.innerHTML='<div style="text-align:center;padding:14px;font-size:12px;color:var(--gray)">No tasks yet. Tap + Add!</div>';return;}
-  list.innerHTML=tasks.map(function(t){
+
+  // Show locked banner
+  var lockedBanner = locked
+    ? '<div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px">🔒 <strong>Day is locked!</strong> '+(isAdmin?'Tap "🔓 Unlock Day" to make changes.':'Only Papa can unlock this day.')+'</div>'
+    : '';
+
+  list.innerHTML = lockedBanner + tasks.map(function(t){
     var done=!!ch[t.id],timeStr=t.time?'<div class="task-time">⏰ '+t.time+'</div>':'';
-    // Children cannot tick tasks — show lock icon instead
-    var fn = isChild
-      ? 'showToast(\'Only Mummy or Papa can tick tasks! 🔒\')'
-      : isFuture
-        ? 'showToast(\'Future day!\')'
-        : 'toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
-    var checkStyle = isChild
-      ? 'cursor:not-allowed;opacity:.6;'
-      : '';
-    return '<div class="task-item'+(done?' done':'')+'">'+
+    var fn;
+    if(isChild){
+      fn='showToast(\'Only Mummy or Papa can tick tasks! 🔒\')';
+    } else if(locked && !isAdmin){
+      fn='showToast(\'This day is locked! Ask Papa to unlock.\')';
+    } else if(locked && isAdmin){
+      fn='toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    } else if(isFuture){
+      fn='showToast(\'Future day!\')';
+    } else {
+      fn='toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    }
+    var checkStyle=isChild?'cursor:not-allowed;opacity:.6;':'';
+    var showEdit=isParent&&(!locked||(locked&&isAdmin));
+    return '<div class="task-item'+(done?' done':'')+(locked?' task-locked':'')+'">'+
       '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'" style="'+checkStyle+'">'+(done?'✓':(isChild?'🔒':''))+'</div>'+
       '<div class="task-info" onclick="'+fn+'"><div class="task-name">'+t.en+'</div><div class="task-name-hi">'+t.hi+'</div>'+timeStr+'</div>'+
       '<div class="task-amount">+₹'+t.amount+'</div>'+
-      (isParent?'<div class="task-actions"><button class="task-act-btn" style="background:#ede9fe" onclick="openEditTask(\''+t.id+'\')">✏️</button><button class="task-act-btn" style="background:#fee2e2" onclick="deleteTask(\''+t.id+'\')">🗑️</button></div>':'')+
+      (showEdit?'<div class="task-actions"><button class="task-act-btn" style="background:#ede9fe" onclick="openEditTask(\''+t.id+'\')">✏️</button><button class="task-act-btn" style="background:#fee2e2" onclick="deleteTask(\''+t.id+'\')">🗑️</button></div>':'')+
     '</div>';
   }).join('');
 }
@@ -1297,8 +1446,10 @@ function showCelebration(kid){
 // ══ TABS / MODE / LANG ══
 var currentTab='home';
 function switchTab(tab){
+  // Stop kids zone timer if leaving kids tab
+  if(currentTab==='kids' && tab!=='kids') stopKzTimer();
   currentTab=tab;
-  ['home','quiz','photos','report','admin'].forEach(function(t){
+  ['home','quiz','kids','photos','report','admin'].forEach(function(t){
     var v=document.getElementById('view-'+t);if(v)v.classList.toggle('hidden',t!==tab);
     var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
   });
@@ -1306,6 +1457,7 @@ function switchTab(tab){
   if(tab==='report')renderReport();
   if(tab==='admin')renderUsersList();
   if(tab==='quiz')initQuizTab();
+  if(tab==='kids')initKidsZone();
 }
 function setMode(m){mode=m;document.getElementById('mode-vacation').className='mode-btn'+(m==='vacation'?' active':'');document.getElementById('mode-school').className='mode-btn'+(m==='school'?' active':'');render();}
 function setLang(l){lang=l;document.getElementById('lang-en').className='lang-btn'+(l==='en'?' active':'');document.getElementById('lang-hi').className='lang-btn'+(l==='hi'?' active':'');render();}
@@ -1355,7 +1507,328 @@ function teachESpeak(key){var dE=getWeekEarned('dhruv',reportWeekOffset),vE=getW
 function speakCurrent(){if(!window.speechSynthesis||!teachETxt)return;window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(teachETxt);u.rate=1.0;u.pitch=1.4;u.volume=1;var vv=window.speechSynthesis.getVoices();for(var i=0;i<vv.length;i++){if(/female|samantha|karen|victoria|moira|tessa/i.test(vv[i].name)&&vv[i].lang.indexOf('en')===0){u.voice=vv[i];break;}}window.speechSynthesis.speak(u);}
 
 // ══ REPORT ══
+// ══════════════════════════════════════
+// SMART BEHAVIOUR ANALYSIS
+// ══════════════════════════════════════
+
+function collectKidData(kid){
+  // Collect last 4 weeks of data for deep analysis
+  var allTasks = (data.tasks[mode]||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
+  var taskStats = {};
+  allTasks.forEach(function(t){
+    taskStats[t.en] = {done:0, missed:0, time:t.time||'', amount:t.amount};
+  });
+
+  var dayEarnings = [];
+  var weeklyScores = [];
+  var morningDone=0, morningTotal=0, afternoonDone=0, afternoonTotal=0, eveningDone=0, eveningTotal=0;
+  var bestDay='', bestDayEarned=0, worstDay='', worstDayEarned=999;
+  var DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var dayTotals={};
+
+  for(var wOff=-3; wOff<=0; wOff++){
+    var weekTotal=0;
+    for(var d=1; d<=7; d++){
+      var ch = getChecks(kid, d, wOff);
+      var dayEarned = 0;
+      allTasks.forEach(function(t){
+        var done = !!ch[t.id];
+        if(done){ taskStats[t.en].done++; dayEarned+=t.amount; }
+        else taskStats[t.en].missed++;
+        // Time of day analysis
+        var tStr = (t.time||'').toLowerCase();
+        if(tStr.indexOf('6:')==0||tStr.indexOf('7:')==0||tStr.indexOf('8:')==0||tStr.indexOf('9:')==0){
+          morningTotal++; if(done) morningDone++;
+        } else if(tStr.indexOf('10:')==0||tStr.indexOf('11:')==0||tStr.indexOf('1:')==0||tStr.indexOf('2:')==0||tStr.indexOf('3:')==0){
+          afternoonTotal++; if(done) afternoonDone++;
+        } else if(tStr.indexOf('4:')==0||tStr.indexOf('5:')==0||tStr.indexOf('6:')==0||tStr.indexOf('7:')==0||tStr.indexOf('8:')==0||tStr.indexOf('9:')==0){
+          eveningTotal++; if(done) eveningDone++;
+        }
+      });
+      weekTotal+=dayEarned;
+      // Track best/worst day
+      var dayName=DAYS_FULL[d-1];
+      if(!dayTotals[dayName]) dayTotals[dayName]={earned:0,count:0};
+      dayTotals[dayName].earned+=dayEarned;
+      dayTotals[dayName].count++;
+    }
+    weeklyScores.push(weekTotal);
+  }
+
+  // Sort tasks by completion rate
+  var taskList = Object.keys(taskStats).map(function(name){
+    var s=taskStats[name]; var total=s.done+s.missed;
+    return {name:name, rate:total>0?Math.round(s.done/total*100):0, done:s.done, missed:s.missed, amount:s.amount, time:s.time};
+  });
+  taskList.sort(function(a,b){return b.rate-a.rate;});
+  var topTasks = taskList.slice(0,5);
+  var bottomTasks = taskList.slice(-5).reverse();
+
+  // Best and worst days
+  var dayAvg = Object.keys(dayTotals).map(function(day){
+    return {day:day, avg:dayTotals[day].count>0?Math.round(dayTotals[day].earned/dayTotals[day].count):0};
+  });
+  dayAvg.sort(function(a,b){return b.avg-a.avg;});
+
+  // Quiz data
+  var quizAvg = 0;
+  // Bonuses
+  var bonuses = (data.bonuses&&data.bonuses[kid])||[];
+  // Streak
+  var streak = getStreak(kid);
+  var level = getLevel(kid);
+  var weekAvg = weeklyScores.length>0?Math.round(weeklyScores.reduce(function(a,b){return a+b;},0)/weeklyScores.length):0;
+
+  return {
+    kid: kid,
+    name: kid==='dhruv'?'Dhruv':'Vedika',
+    emoji: kid==='dhruv'?'🐯':'🐼',
+    weeklyScores: weeklyScores,
+    weekAvg: weekAvg,
+    topTasks: topTasks,
+    bottomTasks: bottomTasks,
+    morningRate: morningTotal>0?Math.round(morningDone/morningTotal*100):0,
+    afternoonRate: afternoonTotal>0?Math.round(afternoonDone/afternoonTotal*100):0,
+    eveningRate: eveningTotal>0?Math.round(eveningDone/eveningTotal*100):0,
+    bestDays: dayAvg.slice(0,3),
+    worstDays: dayAvg.slice(-3).reverse(),
+    streak: streak,
+    level: level,
+    bonuses: bonuses,
+    totalTasks: Object.keys(taskStats).length
+  };
+}
+
+function generateBehaviourReport(kid){
+  var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  if(!isParent){showToast('This report is for parents only!');return;}
+
+  // Show loading
+  document.getElementById('behaviour-placeholder').style.display='none';
+  document.getElementById('behaviour-report').style.display='none';
+  document.getElementById('behaviour-loading').style.display='block';
+  var bar = document.getElementById('behaviour-progress-bar');
+  bar.style.width='0%';
+  setTimeout(function(){bar.style.width='70%';},100);
+
+  // Collect data
+  var kd = collectKidData(kid);
+  var name = kd.name, emoji = kd.emoji;
+
+  // Build AI prompt with real data
+  var prompt = 'You are a child behaviour and parenting expert AI. Analyze this data about '+name+' (age '+(kid==='dhruv'?'8-10':'12-14')+') and generate a detailed, warm, actionable parenting report.\n\n'+
+    'DATA:\n'+
+    '- Weekly earnings last 4 weeks: ₹'+kd.weeklyScores.join(', ₹')+' (avg: ₹'+kd.weekAvg+'/week)\n'+
+    '- Current streak: '+kd.streak+' days\n'+
+    '- Level: '+kd.level.level.name+' (all-time: ₹'+kd.level.total+')\n'+
+    '- Morning task completion rate: '+kd.morningRate+'%\n'+
+    '- Afternoon task completion rate: '+kd.afternoonRate+'%\n'+
+    '- Evening task completion rate: '+kd.eveningRate+'%\n'+
+    '- Best performing days: '+kd.bestDays.map(function(d){return d.day+' (₹'+d.avg+' avg)';}).join(', ')+'\n'+
+    '- Days needing improvement: '+kd.worstDays.map(function(d){return d.day+' (₹'+d.avg+' avg)';}).join(', ')+'\n'+
+    '- Top 5 tasks (loved): '+kd.topTasks.map(function(t){return t.name+' ('+t.rate+'%)';}).join(', ')+'\n'+
+    '- Bottom 5 tasks (needs push): '+kd.bottomTasks.map(function(t){return t.name+' ('+t.rate+'%)';}).join(', ')+'\n'+
+    '- Bonus rewards received: '+kd.bonuses.length+'\n\n'+
+    'Generate a JSON response with this EXACT structure (no markdown, pure JSON):\n'+
+    '{"summary":"2-3 sentence warm overall summary","strength":"One key strength observed","challenge":"One main challenge","timeAnalysis":{"morning":{"label":"Morning (6AM-12PM)","rate":'+kd.morningRate+',"insight":"1 sentence insight"},"afternoon":{"label":"Afternoon (12PM-4PM)","rate":'+kd.afternoonRate+',"insight":"1 sentence insight"},"evening":{"label":"Evening (4PM-9PM)","rate":'+kd.eveningRate+',"insight":"1 sentence insight"}},"lovedTasks":[{"task":"task name","why":"brief reason why they like it"}],"pushTasks":[{"task":"task name","tip":"specific actionable tip for parents"}],"bestDays":[{"day":"day name","reason":"why this day works"}],"actionPlan":["specific action 1 for parents","specific action 2","specific action 3"],"encouragement":"One warm encouraging message to read to the child"}';
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1500,
+      messages:[{role:'user',content:prompt}]
+    })
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    bar.style.width='100%';
+    setTimeout(function(){
+      document.getElementById('behaviour-loading').style.display='none';
+      var text = d.content&&d.content[0]&&d.content[0].text||'{}';
+      text = text.replace(/```json|```/g,'').trim();
+      try{
+        var report = JSON.parse(text);
+        renderBehaviourReport(kd, report);
+      } catch(e){
+        renderBehaviourFallback(kd);
+      }
+    },500);
+  }).catch(function(){
+    document.getElementById('behaviour-loading').style.display='none';
+    renderBehaviourFallback(kd);
+  });
+}
+
+function renderBehaviourReport(kd, r){
+  var color = kd.kid==='dhruv'?'#3b82f6':'#ec4899';
+  var html =
+    // Header
+    '<div style="background:rgba(255,255,255,.1);border-radius:12px;padding:14px;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+        '<div style="font-size:32px">'+kd.emoji+'</div>'+
+        '<div><div style="font-size:15px;font-weight:900;color:#fff">'+kd.name+'\'s Behaviour Report</div>'+
+        '<div style="font-size:11px;color:rgba(255,255,255,.7)">Based on last 4 weeks · '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:rgba(255,255,255,.9);line-height:1.7">'+r.summary+'</div>'+
+    '</div>'+
+
+    // Strength & Challenge
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+      '<div style="background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.4);border-radius:10px;padding:10px">'+
+        '<div style="font-size:10px;font-weight:800;color:#6ee7b7;margin-bottom:4px">💪 KEY STRENGTH</div>'+
+        '<div style="font-size:11px;color:#fff;line-height:1.5">'+r.strength+'</div>'+
+      '</div>'+
+      '<div style="background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:10px">'+
+        '<div style="font-size:10px;font-weight:800;color:#fcd34d;margin-bottom:4px">🎯 FOCUS AREA</div>'+
+        '<div style="font-size:11px;color:#fff;line-height:1.5">'+r.challenge+'</div>'+
+      '</div>'+
+    '</div>'+
+
+    // Time of day analysis
+    '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">⏰ Time of Day Performance</div>'+
+      ['morning','afternoon','evening'].map(function(period){
+        var p = r.timeAnalysis&&r.timeAnalysis[period];
+        if(!p) return '';
+        var rate = p.rate||0;
+        var barColor = rate>=75?'#6ee7b7':rate>=50?'#fcd34d':'#fca5a5';
+        return '<div style="margin-bottom:10px">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+            '<div style="font-size:12px;font-weight:700;color:#fff">'+p.label+'</div>'+
+            '<div style="font-size:12px;font-weight:900;color:'+barColor+'">'+rate+'%</div>'+
+          '</div>'+
+          '<div style="background:rgba(255,255,255,.15);border-radius:50px;height:8px;overflow:hidden;margin-bottom:4px">'+
+            '<div style="height:8px;border-radius:50px;background:'+barColor+';width:'+rate+'%;transition:width 1s ease"></div>'+
+          '</div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,.65);line-height:1.4">'+p.insight+'</div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // Loved tasks
+    '<div style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:#6ee7b7;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">❤️ Tasks '+kd.name+' Loves</div>'+
+      (r.lovedTasks||[]).map(function(t){
+        return '<div style="display:flex;gap:8px;margin-bottom:7px;align-items:flex-start">'+
+          '<span style="font-size:14px">✅</span>'+
+          '<div><div style="font-size:12px;font-weight:700;color:#fff">'+t.task+'</div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,.65)">'+t.why+'</div></div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // Tasks needing push
+    '<div style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:#fca5a5;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">💡 Tasks Needing a Push</div>'+
+      (r.pushTasks||[]).map(function(t){
+        return '<div style="margin-bottom:9px;background:rgba(0,0,0,.2);border-radius:8px;padding:8px">'+
+          '<div style="font-size:12px;font-weight:700;color:#fca5a5;margin-bottom:3px">⚠️ '+t.task+'</div>'+
+          '<div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.5">💡 <strong>Tip:</strong> '+t.tip+'</div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // Best days
+    '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📅 Best Days</div>'+
+      (r.bestDays||[]).map(function(d){
+        return '<div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start">'+
+          '<span style="font-size:14px">🌟</span>'+
+          '<div><div style="font-size:12px;font-weight:700;color:#fff">'+d.day+'</div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,.65)">'+d.reason+'</div></div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // Action plan for parents
+    '<div style="background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(79,70,229,.4));border:1px solid rgba(167,139,250,.4);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:#c4b5fd;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">👨‍👩‍ Action Plan for Parents</div>'+
+      (r.actionPlan||[]).map(function(action,i){
+        return '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">'+
+          '<div style="width:20px;height:20px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+(i+1)+'</div>'+
+          '<div style="font-size:11px;color:rgba(255,255,255,.9);line-height:1.6">'+action+'</div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+
+    // Encouragement message
+    '<div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.2)">'+
+      '<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.7);margin-bottom:5px">💬 MESSAGE TO READ TO '+kd.name.toUpperCase()+'</div>'+
+      '<div style="font-size:13px;font-style:italic;color:#fff;line-height:1.7">"'+r.encouragement+'"</div>'+
+      '<button onclick="speakBehaviourMessage(\''+r.encouragement.replace(/'/g,"\\'")+'\')" style="margin-top:8px;border:none;border-radius:50px;padding:5px 12px;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;cursor:pointer">🔊 Read Aloud</button>'+
+    '</div>';
+
+  var reportEl = document.getElementById('behaviour-report');
+  reportEl.innerHTML = html;
+  reportEl.style.display = 'block';
+}
+
+function renderBehaviourFallback(kd){
+  // If AI fails, generate a data-driven report without AI
+  var color = kd.kid==='dhruv'?'#3b82f6':'#ec4899';
+  var bestTime = kd.morningRate>=kd.afternoonRate&&kd.morningRate>=kd.eveningRate?'Morning':
+                 kd.afternoonRate>=kd.eveningRate?'Afternoon':'Evening';
+  var worstTime = kd.morningRate<=kd.afternoonRate&&kd.morningRate<=kd.eveningRate?'Morning':
+                  kd.afternoonRate<=kd.eveningRate?'Afternoon':'Evening';
+  var trend = kd.weeklyScores[3]>kd.weeklyScores[0]?'improving':'needs attention';
+
+  var html =
+    '<div style="background:rgba(255,255,255,.1);border-radius:12px;padding:14px;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+        '<div style="font-size:32px">'+kd.emoji+'</div>'+
+        '<div><div style="font-size:15px;font-weight:900;color:#fff">'+kd.name+'\'s Behaviour Report</div>'+
+        '<div style="font-size:11px;color:rgba(255,255,255,.7)">Data analysis · Last 4 weeks</div></div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:rgba(255,255,255,.85);line-height:1.7">'+kd.name+' is performing at an average of ₹'+kd.weekAvg+' per week with a '+kd.streak+'-day streak. Performance is '+trend+'.</div>'+
+    '</div>'+
+    '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);margin-bottom:10px">⏰ Time Performance</div>'+
+      [['Morning',kd.morningRate],['Afternoon',kd.afternoonRate],['Evening',kd.eveningRate]].map(function(p){
+        var bc = p[1]>=75?'#6ee7b7':p[1]>=50?'#fcd34d':'#fca5a5';
+        return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;color:#fff">'+p[0]+'</span><span style="font-size:11px;font-weight:800;color:'+bc+'">'+p[1]+'%</span></div>'+
+          '<div style="background:rgba(255,255,255,.15);border-radius:50px;height:7px;overflow:hidden"><div style="height:7px;background:'+bc+';width:'+p[1]+'%;border-radius:50px"></div></div></div>';
+      }).join('')+
+    '</div>'+
+    '<div style="background:rgba(16,185,129,.15);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:#6ee7b7;margin-bottom:6px">❤️ Tasks Completed Most</div>'+
+      kd.topTasks.slice(0,3).map(function(t){return '<div style="font-size:11px;color:#fff;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.1)">✅ '+t.name+' — '+t.rate+'%</div>';}).join('')+
+    '</div>'+
+    '<div style="background:rgba(239,68,68,.15);border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:11px;font-weight:800;color:#fca5a5;margin-bottom:6px">💡 Needs Attention</div>'+
+      kd.bottomTasks.slice(0,3).map(function(t){return '<div style="font-size:11px;color:#fff;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.1)">⚠️ '+t.name+' — '+t.rate+'%</div>';}).join('')+
+    '</div>'+
+    '<div style="background:rgba(124,58,237,.3);border-radius:10px;padding:12px">'+
+      '<div style="font-size:11px;font-weight:800;color:#c4b5fd;margin-bottom:6px">👨‍👩‍ Quick Tips for Parents</div>'+
+      '<div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.8">'+
+        '• '+kd.name+'\'s best time is <strong>'+bestTime+'</strong> — plan important tasks then<br>'+
+        '• <strong>'+worstTime+'</strong> needs more support and encouragement<br>'+
+        '• Weekly trend is <strong>'+trend+'</strong> — '+(trend==='improving'?'keep the momentum!':'try extra motivation strategies')+
+      '</div>'+
+    '</div>';
+
+  document.getElementById('behaviour-report').innerHTML = html;
+  document.getElementById('behaviour-report').style.display = 'block';
+}
+
+function speakBehaviourMessage(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.rate=1.0; u.pitch=1.2; u.volume=1;
+  var vv = window.speechSynthesis.getVoices();
+  for(var i=0;i<vv.length;i++){
+    if(/female|samantha|karen|victoria/i.test(vv[i].name)&&vv[i].lang.indexOf('en')===0){u.voice=vv[i];break;}
+  }
+  window.speechSynthesis.speak(u);
+}
+
+// Show behaviour section only for parents/admin in renderReport
 function renderReport(){
+  // Show/hide behaviour section based on role
+  var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  var bs = document.getElementById('behaviour-section');
+  if(bs) bs.style.display = isParent?'block':'none';
   if(!data)return;
   var DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],now=new Date();
   var weekLabel=reportWeekOffset===0?'Week of '+now.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):getWeekStartLabel(reportWeekOffset);
@@ -1984,6 +2457,332 @@ function doRedeem(){
 // ── FIRESTORE INDEX FALLBACK ──
 // If quiz history fails due to missing index, handle gracefully
 
+
+// ══════════════════════════════════════
+// KIDS ZONE — Timer, Coins & Games
+// ══════════════════════════════════════
+var currentGame = null;
+var kzTimer = null;
+var kzSecondsLeft = 3600; // 60 minutes
+var KZ_MAX_SECONDS = 3600;
+var KZ_MAX_COINS = 60;
+var kzTodayCoins = 0;
+var kzTimerRunning = false;
+
+function getKzTodayKey(){ return 'kz_'+getTodayKey(); }
+
+function initKidsZone(){
+  // Load today's time used and coins from Firebase
+  var uid = currentUser&&currentUser.uid;
+  if(!uid) return;
+  db.collection('kidszone').doc(uid+'_'+getTodayKey()).get().then(function(doc){
+    var used = doc.exists?(doc.data().secondsUsed||0):0;
+    kzTodayCoins = doc.exists?(doc.data().coinsEarned||0):0;
+    kzSecondsLeft = Math.max(0, KZ_MAX_SECONDS - used);
+    updateKzUI();
+    if(kzSecondsLeft <= 0){
+      showTimeUp();
+    } else {
+      document.getElementById('kz-time-up').style.display='none';
+      document.getElementById('kids-game-menu').style.display='grid';
+      document.getElementById('kids-game-area').style.display='none';
+    }
+  }).catch(function(){
+    kzSecondsLeft = KZ_MAX_SECONDS;
+    kzTodayCoins = 0;
+    updateKzUI();
+  });
+}
+
+function updateKzUI(){
+  var mins = Math.floor(kzSecondsLeft/60);
+  var secs = kzSecondsLeft%60;
+  var display = document.getElementById('kz-timer-display');
+  var bar = document.getElementById('kz-timer-bar');
+  var coinsEl = document.getElementById('kz-coins-display');
+  if(display) display.textContent = mins+':'+(secs<10?'0':'')+secs;
+  if(bar) bar.style.width = (kzSecondsLeft/KZ_MAX_SECONDS*100)+'%';
+  // Color warning
+  if(kzSecondsLeft < 600){ // less than 10 mins
+    if(bar) bar.style.background='#fbbf24';
+    if(display) display.style.color='#fbbf24';
+  }
+  if(kzSecondsLeft < 300){ // less than 5 mins
+    if(bar) bar.style.background='#fee2e2';
+    if(display) display.style.color='#fee2e2';
+  }
+  if(coinsEl) coinsEl.textContent = kzTodayCoins+' / '+KZ_MAX_COINS;
+}
+
+function startKzTimer(){
+  if(kzTimerRunning) return;
+  kzTimerRunning = true;
+  kzTimer = setInterval(function(){
+    if(kzSecondsLeft <= 0){
+      stopKzTimer();
+      showTimeUp();
+      return;
+    }
+    kzSecondsLeft--;
+    updateKzUI();
+    // Save to Firebase every 30 seconds
+    if(kzSecondsLeft % 30 === 0) saveKzProgress();
+    // Warning at 5 minutes
+    if(kzSecondsLeft === 300) showToast('⏰ 5 minutes left in Kids Zone!');
+    // Warning at 1 minute
+    if(kzSecondsLeft === 60) showToast('⚠️ Only 1 minute left!');
+  }, 1000);
+}
+
+function stopKzTimer(){
+  if(kzTimer){ clearInterval(kzTimer); kzTimer=null; }
+  kzTimerRunning = false;
+  saveKzProgress();
+}
+
+function saveKzProgress(){
+  var uid = currentUser&&currentUser.uid; if(!uid) return;
+  var secondsUsed = KZ_MAX_SECONDS - kzSecondsLeft;
+  db.collection('kidszone').doc(uid+'_'+getTodayKey()).set({
+    uid: uid,
+    date: getTodayKey(),
+    secondsUsed: secondsUsed,
+    coinsEarned: kzTodayCoins
+  });
+}
+
+function showTimeUp(){
+  stopKzTimer();
+  document.getElementById('kz-time-up').style.display='block';
+  document.getElementById('kids-game-menu').style.display='none';
+  document.getElementById('kids-game-area').style.display='none';
+  var msg = document.getElementById('kz-coins-earned-msg');
+  if(msg) msg.textContent = '🪙 You earned '+kzTodayCoins+' coins today!';
+  // Trigger celebration if coins earned
+  if(kzTodayCoins > 0) showCelebration('dhruv');
+}
+
+function awardKzCoins(amount){
+  if(kzTodayCoins >= KZ_MAX_COINS){
+    showToast('Max coins for today reached! ('+KZ_MAX_COINS+' coins) 🪙');
+    return 0;
+  }
+  var actual = Math.min(amount, KZ_MAX_COINS - kzTodayCoins);
+  kzTodayCoins += actual;
+  updateKzUI();
+  saveKzProgress();
+  // Add coins to BOTH Dhruv and Vedika wallets
+  ['dhruv','vedika'].forEach(function(kid){
+    // Find uid for each kid
+    db.collection('users').where('linkedKid','==',kid).get().then(function(snap){
+      snap.forEach(function(doc){
+        var kidUid = doc.id;
+        db.collection('wallets').doc(kidUid).get().then(function(wDoc){
+          var current = wDoc.exists?(wDoc.data().coins||0):0;
+          db.collection('wallets').doc(kidUid).set({coins:current+actual},{ merge:true });
+        });
+      });
+    });
+  });
+  showToast('🪙 +'+actual+' coins for Dhruv AND Vedika!');
+  return actual;
+}
+
+function startGame(game){
+  if(kzSecondsLeft <= 0){ showTimeUp(); return; }
+  currentGame = game;
+  document.getElementById('kids-game-menu').style.display='none';
+  document.getElementById('kids-game-area').style.display='block';
+  var titles = {memory:'🃏 Memory Cards (+10🪙)',puzzle:'🧩 Number Puzzle (+15🪙)',wordsearch:'🔤 Word Search (+20🪙)',tictactoe:'⭕ Tic Tac Toe (+5🪙)'};
+  document.getElementById('game-title').textContent = titles[game]||game;
+  var coinEl = document.getElementById('game-coin-indicator');
+  if(coinEl) coinEl.textContent = kzTodayCoins+'/'+KZ_MAX_COINS+' 🪙 today';
+  startKzTimer();
+  var gc = document.getElementById('game-content');
+  if(game==='memory') buildMemoryGame(gc);
+  else if(game==='puzzle') buildPuzzleGame(gc);
+  else if(game==='wordsearch') buildWordSearch(gc);
+  else if(game==='tictactoe') buildTicTacToe(gc);
+}
+
+function exitGame(){
+  stopKzTimer();
+  currentGame=null;
+  document.getElementById('kids-game-menu').style.display='grid';
+  document.getElementById('kids-game-area').style.display='none';
+  // Update coin indicator when going back to menu
+  updateKzUI();
+}
+
+// ── MEMORY CARD GAME ── (+10 coins on complete)
+function buildMemoryGame(gc){
+  var emojis=['🐯','🐼','🦁','🐘','🦊','🐸','🦋','🐬','🌸','🍕','⭐','🎯'];
+  var cards=[].concat(emojis,emojis);
+  for(var i=cards.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=cards[i];cards[i]=cards[j];cards[j]=tmp;}
+  var flipped=[],matched=[],moves=0,lock=false,coinsGiven=false;
+
+  function render(){
+    var allDone = matched.length===cards.length;
+    if(allDone && !coinsGiven){
+      coinsGiven=true;
+      setTimeout(function(){ awardKzCoins(10); },300);
+    }
+    gc.innerHTML='<div style="text-align:center;margin-bottom:10px">'+
+      '<span style="font-size:12px;font-weight:700;color:#6b7280">Moves: <strong style="color:#7c3aed">'+moves+'</strong> · Matched: <strong style="color:#059669">'+Math.floor(matched.length/2)+'/'+emojis.length+'</strong></span></div>'+
+      '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-width:360px;margin:0 auto">'+
+      cards.map(function(c,i){
+        var isFlipped=flipped.indexOf(i)>-1||matched.indexOf(i)>-1;
+        var isMatched=matched.indexOf(i)>-1;
+        return '<div onclick="memFlip('+i+')" style="aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .3s;border:2px solid '+(isMatched?'#059669':isFlipped?'#7c3aed':'#e5e7eb')+';background:'+(isMatched?'#d1fae5':isFlipped?'#ede9fe':'#f3f4f6')+';">'+( isFlipped?c:'❓')+'</div>';
+      }).join('')+'</div>'+
+      (allDone?'<div style="text-align:center;margin-top:14px"><div style="font-size:15px;font-weight:900;color:#059669">🎉 Done in '+moves+' moves! +10🪙</div><button onclick="buildMemoryGame(document.getElementById(\'game-content\'))" style="margin-top:8px;border:none;border-radius:50px;padding:8px 20px;background:#7c3aed;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Play Again!</button></div>':'');
+    window.memFlip=function(idx){
+      if(lock||flipped.indexOf(idx)>-1||matched.indexOf(idx)>-1) return;
+      flipped.push(idx); render();
+      if(flipped.length===2){
+        moves++;lock=true;
+        setTimeout(function(){
+          if(cards[flipped[0]]===cards[flipped[1]]){matched=matched.concat(flipped);}
+          flipped=[];lock=false;render();
+        },700);
+      }
+    };
+  }
+  render();
+}
+
+// ── SLIDING PUZZLE GAME ── (+15 coins on solve)
+function buildPuzzleGame(gc){
+  var size=3,tiles=[],blank=size*size-1;
+  for(var i=0;i<size*size;i++) tiles.push(i);
+  for(var s=0;s<100;s++){
+    var nb=getNeighborsPz(tiles.indexOf(blank),size);
+    var rn=nb[Math.floor(Math.random()*nb.length)];
+    var bi=tiles.indexOf(blank);var tmp=tiles[bi];tiles[bi]=tiles[rn];tiles[rn]=tmp;
+  }
+  var moves=0,coinsGiven=false;
+  function getNeighborsPz(pos,sz){
+    var n=[],r=Math.floor(pos/sz),c=pos%sz;
+    if(r>0)n.push(pos-sz);if(r<sz-1)n.push(pos+sz);if(c>0)n.push(pos-1);if(c<sz-1)n.push(pos+1);return n;
+  }
+  function isSolvedPz(){return tiles.every(function(t,i){return t===i;});}
+  function render(){
+    var solved=isSolvedPz();
+    if(solved&&!coinsGiven){coinsGiven=true;setTimeout(function(){awardKzCoins(15);},300);}
+    gc.innerHTML='<div style="text-align:center;margin-bottom:10px"><span style="font-size:12px;font-weight:700;color:#6b7280">Moves: <strong style="color:#7c3aed">'+moves+'</strong></span></div>'+
+      '<div style="display:grid;grid-template-columns:repeat('+size+',1fr);gap:6px;max-width:240px;margin:0 auto">'+
+      tiles.map(function(t,i){
+        return t===blank
+          ? '<div style="aspect-ratio:1;border-radius:10px;background:#f3f4f6"></div>'
+          : '<div onclick="pzMove('+i+')" style="aspect-ratio:1;border-radius:10px;background:'+(solved?'#059669':'#7c3aed')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;cursor:pointer;transition:all .2s">'+(t+1)+'</div>';
+      }).join('')+'</div>'+
+      (solved?'<div style="text-align:center;margin-top:14px"><div style="font-size:15px;font-weight:900;color:#059669">🎉 Solved in '+moves+' moves! +15🪙</div><button onclick="buildPuzzleGame(document.getElementById(\'game-content\'))" style="margin-top:8px;border:none;border-radius:50px;padding:8px 20px;background:#7c3aed;color:#fff;font-size:13px;font-weight:700;cursor:pointer">New Puzzle!</button></div>':'<div style="text-align:center;margin-top:8px;font-size:11px;color:#9ca3af">Tap a tile next to the empty space</div>');
+    window.pzMove=function(idx){
+      var bi=tiles.indexOf(blank);
+      if(getNeighborsPz(bi,size).indexOf(idx)<0) return;
+      var tmp=tiles[bi];tiles[bi]=tiles[idx];tiles[idx]=tmp;moves++;render();
+    };
+  }
+  render();
+}
+
+// ── WORD SEARCH ── (+20 coins on complete)
+function buildWordSearch(gc){
+  var words=['DHRUV','VEDIKA','MUMMY','PAPA','INDIA','JAIPUR','TIGER','PANDA'];
+  var gridSize=10,grid=[],placed=[];
+  for(var i=0;i<gridSize;i++){grid.push([]);for(var j=0;j<gridSize;j++)grid[i].push('');}
+  words.forEach(function(word){
+    var tries=0,ok=false;
+    while(!ok&&tries<50){
+      tries++;
+      var dir=Math.floor(Math.random()*2),r=Math.floor(Math.random()*gridSize),c=Math.floor(Math.random()*gridSize),fits=true;
+      for(var k=0;k<word.length;k++){
+        var nr=dir?r+k:r,nc=dir?c:c+k;
+        if(nr>=gridSize||nc>=gridSize){fits=false;break;}
+        if(grid[nr][nc]!==''&&grid[nr][nc]!==word[k]){fits=false;break;}
+      }
+      if(fits){for(var k=0;k<word.length;k++){var nr=dir?r+k:r,nc=dir?c:c+k;grid[nr][nc]=word[k];}placed.push({word:word,r:r,c:c,dir:dir});ok=true;}
+    }
+  });
+  var alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(var i=0;i<gridSize;i++)for(var j=0;j<gridSize;j++)if(!grid[i][j])grid[i][j]=alpha[Math.floor(Math.random()*alpha.length)];
+  var found=[],coinsGiven=false;
+
+  function render(){
+    var allFound=found.length===words.length;
+    if(allFound&&!coinsGiven){coinsGiven=true;setTimeout(function(){awardKzCoins(20);},300);}
+    gc.innerHTML='<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px">'+
+      words.map(function(w){return '<span style="padding:3px 8px;border-radius:50px;font-size:11px;font-weight:700;background:'+(found.indexOf(w)>-1?'#d1fae5':'#f3f4f6')+';color:'+(found.indexOf(w)>-1?'#065f46':'#374151')+';'+(found.indexOf(w)>-1?'text-decoration:line-through':'')+'">'+w+'</span>';}).join('')+'</div>'+
+      '<div style="display:grid;grid-template-columns:repeat('+gridSize+',1fr);gap:2px;max-width:320px;margin:0 auto">'+
+      grid.map(function(row,r){
+        return row.map(function(cell,c){
+          var isFound=placed.some(function(p){
+            if(found.indexOf(p.word)<0) return false;
+            for(var k=0;k<p.word.length;k++){if((p.dir?p.r+k:p.r)===r&&(p.dir?p.c:p.c+k)===c)return true;}
+            return false;
+          });
+          return '<div onclick="wsFind('+r+','+c+')" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border-radius:3px;cursor:pointer;background:'+(isFound?'#d1fae5':'#f9fafb')+';color:'+(isFound?'#065f46':'#374151')+';border:1px solid #e5e7eb">'+cell+'</div>';
+        }).join('');
+      }).join('')+'</div>'+
+      (allFound?'<div style="text-align:center;margin-top:12px;font-size:15px;font-weight:900;color:#059669">🎉 All words found! +20🪙</div>':'<div style="text-align:center;margin-top:6px;font-size:11px;color:#9ca3af">Tap any letter of a hidden word to find it</div>');
+    window.wsFind=function(r,c){
+      placed.forEach(function(p){
+        if(found.indexOf(p.word)>-1) return;
+        for(var k=0;k<p.word.length;k++){
+          if((p.dir?p.r+k:p.r)===r&&(p.dir?p.c:p.c+k)===c){found.push(p.word);showToast('Found: '+p.word+' ✅');render();return;}
+        }
+      });
+    };
+  }
+  render();
+}
+
+// ── TIC TAC TOE ── (+5 coins per round win, max 3 rounds)
+function buildTicTacToe(gc){
+  var board=Array(9).fill(''),current='X',winsX=0,winsO=0,draws=0,round=1,maxRounds=3,coinsGiven=false;
+  function checkWin(){
+    var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(var i=0;i<lines.length;i++){var a=lines[i][0],b=lines[i][1],c=lines[i][2];if(board[a]&&board[a]===board[b]&&board[a]===board[c])return board[a];}
+    return board.every(function(c){return c;})?'draw':null;
+  }
+  function render(){
+    var w=checkWin();
+    var gameOver=round>maxRounds;
+    gc.innerHTML='<div style="text-align:center;margin-bottom:8px">'+
+      '<span style="font-size:12px;font-weight:700;color:#3b82f6">🐯 Dhruv: '+winsX+'</span>'+
+      '<span style="font-size:11px;color:#9ca3af;margin:0 10px">Round '+Math.min(round,maxRounds)+'/'+maxRounds+'</span>'+
+      '<span style="font-size:12px;font-weight:700;color:#ec4899">Vedika 🐼: '+winsO+'</span></div>'+
+      (!w&&!gameOver?'<div style="text-align:center;margin-bottom:8px;font-size:13px;font-weight:700;color:'+(current==='X'?'#3b82f6':'#ec4899')+'">'+(current==='X'?'🐯 Dhruv':'🐼 Vedika')+'\'s turn</div>':'')+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:210px;margin:0 auto">'+
+      board.map(function(cell,i){
+        return '<div onclick="tttMove('+i+')" style="aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;cursor:pointer;background:'+(cell==='X'?'#dbeafe':cell==='O'?'#fce7f3':'#f9fafb')+';border:2px solid '+(cell?(cell==='X'?'#3b82f6':'#ec4899'):'#e5e7eb')+'">'+( cell==='X'?'🐯':cell==='O'?'🐼':'')+'</div>';
+      }).join('')+'</div>'+
+      (w?'<div style="text-align:center;margin-top:10px;font-size:14px;font-weight:900;color:'+(w==='draw'?'#6b7280':w==='X'?'#3b82f6':'#ec4899')+'">'+(w==='draw'?'🤝 Draw!':w==='X'?'🎉 Dhruv wins!':'🎉 Vedika wins!')+'</div>':'')+
+      (w&&round<=maxRounds?'<button onclick="tttNext()" style="display:block;margin:8px auto 0;border:none;border-radius:50px;padding:7px 18px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">'+(round<maxRounds?'Next Round →':'See Results!')+'</button>':'')+
+      (gameOver?'<div style="text-align:center;margin-top:12px;background:#f9fafb;border-radius:10px;padding:12px"><div style="font-size:14px;font-weight:900;color:#111;margin-bottom:4px">🏆 Final Score</div><div style="font-size:13px;color:#374151">🐯 Dhruv: '+winsX+' · 🐼 Vedika: '+winsO+(draws?' · Draws: '+draws:'')+'</div><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-top:6px">+'+Math.min((winsX+winsO)*5,15)+'🪙 earned!</div><button onclick="buildTicTacToe(document.getElementById(\'game-content\'))" style="margin-top:8px;border:none;border-radius:50px;padding:7px 18px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Play Again!</button></div>':'');
+
+    window.tttMove=function(i){
+      if(board[i]||checkWin()||round>maxRounds) return;
+      board[i]=current;
+      var w=checkWin();
+      if(w==='X') winsX++;
+      else if(w==='O') winsO++;
+      else if(w==='draw') draws++;
+      if(!w) current=current==='X'?'O':'X';
+      render();
+    };
+    window.tttNext=function(){
+      round++;board=Array(9).fill('');current='X';
+      if(round>maxRounds&&!coinsGiven){
+        coinsGiven=true;
+        var earned=Math.min((winsX+winsO)*5,15);
+        if(earned>0) setTimeout(function(){awardKzCoins(earned);},300);
+      }
+      render();
+    };
+  }
+  render();
+}
 
 // Register Service Worker for PWA
 if('serviceWorker' in navigator){
