@@ -774,14 +774,24 @@ function loadAppData(cb){
   db.collection('appdata').doc('main').onSnapshot(function(doc){
     if(doc.exists){
       data=doc.data();
-      if(!data.tasks){data.tasks={vacation:defVacation(),school:defSchool()};}
-      if(!data.checks){data.checks={dhruv:{},vedika:{}};}
-      if(!data.goals){data.goals={dhruv:{name:'',target:0},vedika:{name:'',target:0}};}
-      if(!data.spent){data.spent={dhruv:0,vedika:0};}
-      if(!data.bonuses){data.bonuses={dhruv:[],vedika:[]};}
-      if(!data.folders){data.folders={dhruv:{},vedika:{}};}
-      if(!data.files){data.files={dhruv:{},vedika:{}};}
+      // Safely add missing fields without wiping existing data
+      if(!data.tasks||!data.tasks.vacation||!data.tasks.school){
+        if(!data.tasks) data.tasks={};
+        if(!data.tasks.vacation) data.tasks.vacation=defVacation();
+        if(!data.tasks.school) data.tasks.school=defSchool();
+      }
+      if(!data.checks) data.checks={dhruv:{},vedika:{}};
+      if(!data.checks.dhruv) data.checks.dhruv={};
+      if(!data.checks.vedika) data.checks.vedika={};
+      if(!data.goals) data.goals={dhruv:{name:'',target:0},vedika:{name:'',target:0}};
+      if(!data.goals.dhruv) data.goals.dhruv={name:'',target:0};
+      if(!data.goals.vedika) data.goals.vedika={name:'',target:0};
+      if(!data.spent) data.spent={dhruv:0,vedika:0};
+      if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
+      if(!data.folders) data.folders={dhruv:{},vedika:{}};
+      if(!data.files) data.files={dhruv:{},vedika:{}};
     } else {
+      // Only create fresh data if nothing exists at all in Firebase
       data={version:4,tasks:{vacation:defVacation(),school:defSchool()},checks:{dhruv:{},vedika:{}},goals:{dhruv:{name:'',target:0},vedika:{name:'',target:0}},spent:{dhruv:0,vedika:0},bonuses:{dhruv:[],vedika:[]},folders:{dhruv:{},vedika:{}},files:{dhruv:{},vedika:{}}};
       db.collection('appdata').doc('main').set(data);
     }
@@ -1105,7 +1115,25 @@ function getWeekEarned(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var 
 function getSpent(kid,wOff){var off=(wOff!==undefined)?wOff:weekOffset;if(!data)return 0;return off===0?(data.spent[kid]||0):(data['spent_'+kid+'_'+off]||0);}
 function getSaved(kid,wOff){return Math.max(0,getWeekEarned(kid,wOff)-getSpent(kid,wOff));}
 function getGoalPct(kid){if(!data)return 0;var g=data.goals[kid];if(!g||!g.target)return 0;return Math.min(100,Math.round(getSaved(kid)/g.target*100));}
-function getTasks(){return((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===selectedKid;});}
+function parseTime(timeStr){
+  if(!timeStr||timeStr.toLowerCase()==='all day'||timeStr.toLowerCase()==='evening') return 9999;
+  // Extract first time e.g. "6:30 AM – 7:00 AM" → "6:30 AM"
+  var first = timeStr.split('–')[0].trim();
+  var match = first.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!match) return 9999;
+  var h = parseInt(match[1]);
+  var m = parseInt(match[2]);
+  var ampm = match[3].toUpperCase();
+  if(ampm==='PM' && h!==12) h+=12;
+  if(ampm==='AM' && h===12) h=0;
+  return h*60+m;
+}
+
+function getTasks(){
+  var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===selectedKid;});
+  // Sort by time slot
+  return tasks.sort(function(a,b){return parseTime(a.time)-parseTime(b.time);});
+}
 function showCoin(a){var c=document.createElement('div');c.className='coin-pop';c.textContent='+₹'+a+'💰';c.style.left=(window.innerWidth/2-30)+'px';c.style.top=(window.innerHeight/2)+'px';document.body.appendChild(c);setTimeout(function(){c.remove();},700);}
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
