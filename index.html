@@ -19,6 +19,7 @@
 <link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
 <link rel="apple-touch-icon" sizes="167x167" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-192.png">
+<link rel="icon" sizes="512x512" href="https://raw.githubusercontent.com/lokesh1982-alt/journey-of-champions/main/icon-512.png">
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json">
@@ -1756,7 +1757,7 @@ function renderBehaviourReport(kd, r){
     '<div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.2)">'+
       '<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.7);margin-bottom:5px">💬 MESSAGE TO READ TO '+kd.name.toUpperCase()+'</div>'+
       '<div style="font-size:13px;font-style:italic;color:#fff;line-height:1.7">"'+r.encouragement+'"</div>'+
-      '<button onclick="speakBehaviourMessage(\''+r.encouragement.replace(/'/g,"\\'")+'\')" style="margin-top:8px;border:none;border-radius:50px;padding:5px 12px;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;cursor:pointer">🔊 Read Aloud</button>'+
+      '<button onclick="speakBehaviourMessage(this.getAttribute(\'data-msg\'))" data-msg="'+r.encouragement.replace(/"/g,'&quot;')+'" style="margin-top:8px;border:none;border-radius:50px;padding:5px 12px;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;cursor:pointer">🔊 Read Aloud</button>'+
     '</div>';
 
   var reportEl = document.getElementById('behaviour-report');
@@ -1812,9 +1813,10 @@ function renderBehaviourFallback(kd){
 }
 
 function speakBehaviourMessage(text){
-  if(!window.speechSynthesis) return;
+  if(!text||!window.speechSynthesis) return;
+  var decoded = text.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
   window.speechSynthesis.cancel();
-  var u = new SpeechSynthesisUtterance(text);
+  var u = new SpeechSynthesisUtterance(decoded);
   u.rate=1.0; u.pitch=1.2; u.volume=1;
   var vv = window.speechSynthesis.getVoices();
   for(var i=0;i<vv.length;i++){
