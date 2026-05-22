@@ -385,6 +385,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div style="display:flex;gap:4px" id="q-dots"></div>
           <div style="color:#fff;font-size:12px;font-weight:800" id="q-score-lbl">Score: ₹0</div>
         </div>
+        <!-- Question progress bar -->
+        <div style="height:4px;background:#e5e7eb"><div id="q-progress" style="height:4px;background:linear-gradient(90deg,#7c3aed,#0ea5e9);transition:width .4s ease;width:0%"></div></div>
         <!-- Timer bar -->
         <div style="height:6px;background:#e5e7eb;position:relative">
           <div id="q-timer-bar" style="height:6px;background:#22c55e;transition:width .1s linear;width:100%"></div>
@@ -1294,7 +1296,8 @@ function renderWallet(){
     db.collection('quiz').doc(uid+'_'+todayKey).get().then(function(qd){
       var done = qd.exists?(qd.data().score||0):0;
       var total = qd.exists&&qd.data().completed?5:0;
-      document.getElementById('quiz-today-lbl').textContent = 'Today: '+(qd.exists&&qd.data().completed?'5/5 ✅':'0/5');
+      var todayScore = qd.exists?(qd.data().score||0):0;
+      document.getElementById('quiz-today-lbl').textContent = qd.exists&&qd.data().completed?'Today: '+todayScore+'/5 ✅':'Today: 0/5 pending';
     });
   });
 }
@@ -1339,66 +1342,130 @@ function renderAllQuizResults(){
 
 function startQuiz(){
   var ageGroup = getUserAgeGroup();
-  var prompt = getQuizPrompt(ageGroup);
-  // Show loading
+  // Show loading state
   document.getElementById('quiz-state-start').classList.add('hidden');
   document.getElementById('quiz-state-question').classList.remove('hidden');
-  document.getElementById('q-text').textContent = '⏳ Generating your questions with AI...';
+  document.getElementById('q-text').textContent = '⏳ Preparing your questions...';
   document.getElementById('q-options').innerHTML = '';
   document.getElementById('q-next-btn').style.display='none';
   document.getElementById('q-feedback').style.display='none';
 
-  // Call Claude API
+  // Use large question bank with daily rotation based on date
+  // This ensures different questions each day without needing API
+  var todayKey = getTodayKey();
+  var dateHash = todayKey.split('-').reduce(function(a,b){return parseInt(a)*31+parseInt(b);},0);
+  var allQ = getAllQuestions(ageGroup);
+  // Shuffle using date as seed so same questions per day but different each day
+  var shuffled = seededShuffle(allQ, dateHash);
+  quizQuestions = shuffled.slice(0,5);
+  quizCurrentIdx = 0;
+  quizScore = 0;
+
+  // Try AI first, fall back to question bank if fails
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{
+      'Content-Type':'application/json',
+      'anthropic-version':'2023-06-01'
+    },
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1000,
-      messages:[{role:'user',content:prompt}]
+      messages:[{role:'user',content:getQuizPrompt(ageGroup)}]
     })
   }).then(function(r){return r.json();}).then(function(d){
+    if(d.error){throw new Error(d.error.message);}
     var text = d.content&&d.content[0]&&d.content[0].text||'[]';
-    // Clean JSON
     text = text.replace(/```json|```/g,'').trim();
-    try{
-      quizQuestions = JSON.parse(text);
-      if(!Array.isArray(quizQuestions)||quizQuestions.length===0) throw new Error('bad');
-      quizCurrentIdx = 0;
-      quizScore = 0;
-      showQuestion();
-    } catch(e){
-      // Fallback questions if AI fails
-      quizQuestions = getFallbackQuestions(ageGroup);
-      quizCurrentIdx=0; quizScore=0; showQuestion();
+    var parsed = JSON.parse(text);
+    if(Array.isArray(parsed)&&parsed.length>=5){
+      quizQuestions = parsed.slice(0,5);
     }
+    showQuestion();
   }).catch(function(){
-    quizQuestions = getFallbackQuestions(ageGroup);
-    quizCurrentIdx=0; quizScore=0; showQuestion();
+    // Use question bank (already set above)
+    showQuestion();
   });
 }
 
-function getFallbackQuestions(ageGroup){
+function seededShuffle(arr, seed){
+  var a = arr.slice();
+  var s = seed;
+  for(var i=a.length-1;i>0;i--){
+    s = (s*9301+49297)%233280;
+    var j = Math.floor((s/233280)*(i+1));
+    var tmp=a[i]; a[i]=a[j]; a[j]=tmp;
+  }
+  return a;
+}
+
+function getAllQuestions(ageGroup){
   if(ageGroup==='dhruv') return [
     {q:'How many days are in a week?',options:['5','6','7','8'],answer:2},
     {q:'What is the capital of India?',options:['Mumbai','Delhi','Chennai','Kolkata'],answer:1},
-    {q:'Which animal is known as the King of the Jungle?',options:['Tiger','Elephant','Lion','Cheetah'],answer:2},
+    {q:'Which animal is the King of the Jungle?',options:['Tiger','Elephant','Lion','Cheetah'],answer:2},
     {q:'What is 8 × 7?',options:['54','56','58','60'],answer:1},
-    {q:'How many colors are in a rainbow?',options:['5','6','7','8'],answer:2}
+    {q:'How many colors are in a rainbow?',options:['5','6','7','8'],answer:2},
+    {q:'Which is the largest animal on land?',options:['Giraffe','Elephant','Hippo','Rhino'],answer:1},
+    {q:'How many months are in a year?',options:['10','11','12','13'],answer:2},
+    {q:'What do plants need to make food?',options:['Moonlight','Sunlight','Starlight','Firelight'],answer:1},
+    {q:'Which planet do we live on?',options:['Mars','Venus','Earth','Jupiter'],answer:2},
+    {q:'How many sides does a triangle have?',options:['2','3','4','5'],answer:1},
+    {q:'What is 15 + 27?',options:['40','41','42','43'],answer:2},
+    {q:'Which bird cannot fly?',options:['Eagle','Parrot','Penguin','Sparrow'],answer:2},
+    {q:'What is the color of the sky on a clear day?',options:['Green','Red','Blue','Yellow'],answer:2},
+    {q:'How many legs does a spider have?',options:['6','8','10','12'],answer:1},
+    {q:'Which is the fastest land animal?',options:['Lion','Horse','Cheetah','Leopard'],answer:2},
+    {q:'What is 100 ÷ 4?',options:['20','25','30','35'],answer:1},
+    {q:'Which fruit is known as the King of Fruits?',options:['Apple','Banana','Mango','Orange'],answer:2},
+    {q:'How many teeth does an adult human have?',options:['28','30','32','34'],answer:2},
+    {q:'What is the national bird of India?',options:['Sparrow','Peacock','Parrot','Eagle'],answer:1},
+    {q:'Which is the smallest planet in our solar system?',options:['Mars','Venus','Mercury','Pluto'],answer:2}
   ];
   if(ageGroup==='vedika') return [
-    {q:'Who wrote the national anthem of India?',options:['Bankim Chandra','Rabindranath Tagore','Mahatma Gandhi','Jawaharlal Nehru'],answer:1},
+    {q:'Who wrote the national anthem of India?',options:['Bankim Chandra','Rabindranath Tagore','Mahatma Gandhi','Nehru'],answer:1},
     {q:'What is the chemical formula of water?',options:['H2O','CO2','O2','HO'],answer:0},
     {q:'Which planet is closest to the Sun?',options:['Venus','Earth','Mars','Mercury'],answer:3},
     {q:'What is the square root of 144?',options:['11','12','13','14'],answer:1},
-    {q:'In which year did India gain independence?',options:['1945','1946','1947','1948'],answer:2}
+    {q:'In which year did India gain independence?',options:['1945','1946','1947','1948'],answer:2},
+    {q:'What is the powerhouse of the cell?',options:['Nucleus','Mitochondria','Ribosome','Vacuole'],answer:1},
+    {q:'Who discovered gravity?',options:['Einstein','Newton','Galileo','Darwin'],answer:1},
+    {q:'What is the largest organ in the human body?',options:['Heart','Brain','Liver','Skin'],answer:3},
+    {q:'Which gas do plants absorb during photosynthesis?',options:['Oxygen','Nitrogen','Carbon Dioxide','Hydrogen'],answer:2},
+    {q:'How many bones are in the adult human body?',options:['196','206','216','226'],answer:1},
+    {q:'What is the capital of Australia?',options:['Sydney','Melbourne','Canberra','Perth'],answer:2},
+    {q:'Who was the first Prime Minister of India?',options:['Sardar Patel','Mahatma Gandhi','Jawaharlal Nehru','Lal Bahadur Shastri'],answer:2},
+    {q:'What is the speed of light approximately?',options:['200,000 km/s','300,000 km/s','400,000 km/s','500,000 km/s'],answer:1},
+    {q:'Which is the longest river in the world?',options:['Amazon','Nile','Ganga','Mississippi'],answer:1},
+    {q:'What is the chemical symbol for Gold?',options:['Go','Gd','Au','Ag'],answer:2},
+    {q:'In which year was the Taj Mahal completed?',options:['1643','1653','1663','1673'],answer:1},
+    {q:'What is the smallest unit of matter?',options:['Molecule','Atom','Electron','Proton'],answer:1},
+    {q:'Which country is the largest by area?',options:['China','USA','Canada','Russia'],answer:3},
+    {q:'What does DNA stand for?',options:['Deoxyribonucleic Acid','Deoxyribose Nucleic Atom','Double Nucleic Acid','None of these'],answer:0},
+    {q:'Who painted the Mona Lisa?',options:['Picasso','Da Vinci','Rembrandt','Michelangelo'],answer:1}
   ];
+  // Adult questions for Mummy/Papa
   return [
     {q:'What is the currency of Japan?',options:['Yuan','Won','Yen','Peso'],answer:2},
     {q:'Who painted the Mona Lisa?',options:['Picasso','Da Vinci','Rembrandt','Michelangelo'],answer:1},
     {q:'What is the largest planet in our solar system?',options:['Saturn','Neptune','Jupiter','Uranus'],answer:2},
     {q:'How many bones are in the human body?',options:['196','206','216','226'],answer:1},
-    {q:'What is the speed of light (approx)?',options:['200,000 km/s','300,000 km/s','400,000 km/s','500,000 km/s'],answer:1}
+    {q:'What is the capital of France?',options:['Lyon','Marseille','Paris','Bordeaux'],answer:2},
+    {q:'Who wrote Romeo and Juliet?',options:['Charles Dickens','William Shakespeare','Jane Austen','Homer'],answer:1},
+    {q:'What is the longest river in the world?',options:['Amazon','Ganga','Nile','Mississippi'],answer:2},
+    {q:'In which year did World War II end?',options:['1943','1944','1945','1946'],answer:2},
+    {q:'What is the chemical symbol for Iron?',options:['Ir','In','Fe','Fr'],answer:2},
+    {q:'Which country invented pizza?',options:['Spain','Greece','France','Italy'],answer:3},
+    {q:'What is the largest ocean on Earth?',options:['Atlantic','Indian','Arctic','Pacific'],answer:3},
+    {q:'Who developed the theory of relativity?',options:['Newton','Bohr','Einstein','Planck'],answer:2},
+    {q:'What is the capital of Japan?',options:['Osaka','Kyoto','Tokyo','Hiroshima'],answer:2},
+    {q:'Which planet has the most moons?',options:['Jupiter','Saturn','Uranus','Neptune'],answer:1},
+    {q:'What does HTTP stand for?',options:['HyperText Transfer Protocol','High Tech Transfer Process','HyperText Transmission Protocol','High Transfer Text Protocol'],answer:0},
+    {q:'Who was the first woman to win a Nobel Prize?',options:['Rosalind Franklin','Marie Curie','Ada Lovelace','Dorothy Hodgkin'],answer:1},
+    {q:'What is the national sport of India?',options:['Cricket','Kabaddi','Field Hockey','Badminton'],answer:2},
+    {q:'In which country is the Great Barrier Reef located?',options:['New Zealand','Indonesia','Australia','Philippines'],answer:2},
+    {q:'What is the smallest country in the world?',options:['Monaco','San Marino','Vatican City','Liechtenstein'],answer:2},
+    {q:'Who wrote the Ramayana?',options:['Tulsidas','Valmiki','Vyasa','Kalidasa'],answer:1}
   ];
 }
 
@@ -1610,6 +1677,9 @@ function showSpinResult(coins){
 }
 
 function skipSpin(){
+  clearQuizTimer();
+  document.getElementById('quiz-state-spin').classList.add('hidden');
+  document.getElementById('quiz-state-question').classList.add('hidden');
   saveQuizResult(quizScore, 0);
 }
 
@@ -1643,25 +1713,27 @@ function saveQuizResult(score, coins){
     if(score>0 && data){
       var kid = currentUserProfile&&currentUserProfile.linkedKid;
       if(kid){
-        data.spent[kid] = Math.max(0,(data.spent[kid]||0)-0);
-        // Add quiz rupees as bonus
+        // Kids: add to their bonus earnings
         if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
         if(!data.bonuses[kid]) data.bonuses[kid]=[];
         data.bonuses[kid].push({amount:score,reason:'Quiz earnings 🧠',date:new Date().toLocaleDateString('en-IN')});
         saveData();
       }
+      // For Mummy/Papa (no linkedKid) — coins are stored in wallet only, no task bonus needed
     }
     showToast('🎉 ₹'+score+' earned + '+coins+' coins added to wallet!');
     renderWallet();
     renderQuizHistory();
-    // Go back to start state after 2s
+    // Go back to start state after 3s
     setTimeout(function(){
       document.getElementById('quiz-state-spin').classList.add('hidden');
+      document.getElementById('quiz-state-question').classList.add('hidden');
       document.getElementById('quiz-state-start').classList.remove('hidden');
       document.getElementById('quiz-already-done').style.display='block';
       document.getElementById('start-quiz-btn').style.display='none';
+      quizSpinning=false;
     },3000);
-  }).catch(function(e){ showToast('Error saving: '+e.message); });
+  }).catch(function(e){ showToast('Error saving: '+e.message); console.error(e); });
 }
 
 // ── REDEEM ──
@@ -1689,8 +1761,12 @@ function doRedeem(){
   var rupees=coins/20;
   db.collection('wallets').doc(uid).get().then(function(doc){
     var current=doc.exists?(doc.data().coins||0):0;
-    if(coins>current){showToast('Not enough coins!');return;}
-    return db.collection('wallets').doc(uid).update({coins:current-coins}).then(function(){
+    if(coins>current){showToast('Not enough coins! You have '+current+' coins.');return Promise.reject('insufficient');}
+    return db.collection('wallets').doc(uid).set({
+      coins: current-coins,
+      quizStreak: doc.exists?(doc.data().quizStreak||0):0,
+      lastQuizDate: doc.exists?(doc.data().lastQuizDate||''):''
+    },{ merge:true }).then(function(){
       // Add rupees to kid's savings
       var kid=currentUserProfile&&currentUserProfile.linkedKid;
       if(kid&&data){
