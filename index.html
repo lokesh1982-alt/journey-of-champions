@@ -1428,9 +1428,13 @@ function getQuizPrompt(ageGroup){
 function initQuizTab(){
   var uid = currentUser&&currentUser.uid;
   if(!uid) return;
+  // Always show start button first by default
+  document.getElementById('quiz-already-done').style.display='none';
+  document.getElementById('start-quiz-btn').style.display='block';
+  document.getElementById('quiz-date-lbl').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
   renderWallet();
   renderQuizHistory();
-  // Show admin panel for admin/parent
+  // Show admin panel for admin/parent only
   var isAdmin = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
   var ap = document.getElementById('quiz-admin-panel');
   if(ap) ap.style.display = isAdmin?'block':'none';
@@ -1445,7 +1449,10 @@ function initQuizTab(){
       document.getElementById('quiz-already-done').style.display='none';
       document.getElementById('start-quiz-btn').style.display='block';
     }
-    document.getElementById('quiz-date-lbl').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  }).catch(function(){
+    // On error always show start button
+    document.getElementById('quiz-already-done').style.display='none';
+    document.getElementById('start-quiz-btn').style.display='block';
   });
 }
 
@@ -1455,37 +1462,61 @@ function renderWallet(){
     var coins = doc.exists?(doc.data().coins||0):0;
     document.getElementById('wallet-coins').textContent = coins+' coins';
     document.getElementById('wallet-rupees').textContent = '= ₹'+(coins/20).toFixed(2);
-    // Quiz streak
     var streak = doc.exists?(doc.data().quizStreak||0):0;
     document.getElementById('quiz-streak-lbl').textContent = '🔥 Quiz streak: '+streak+' days';
-    // Today done count
     var todayKey = getTodayKey();
     db.collection('quiz').doc(uid+'_'+todayKey).get().then(function(qd){
-      var done = qd.exists?(qd.data().score||0):0;
-      var total = qd.exists&&qd.data().completed?5:0;
       var todayScore = qd.exists?(qd.data().score||0):0;
       document.getElementById('quiz-today-lbl').textContent = qd.exists&&qd.data().completed?'Today: '+todayScore+'/5 ✅':'Today: 0/5 pending';
+    }).catch(function(){
+      document.getElementById('quiz-today-lbl').textContent = 'Today: pending';
     });
+  }).catch(function(){
+    document.getElementById('wallet-coins').textContent = '0 coins';
+    document.getElementById('wallet-rupees').textContent = '= ₹0.00';
+    document.getElementById('quiz-streak-lbl').textContent = '🔥 Quiz streak: 0 days';
+    document.getElementById('quiz-today-lbl').textContent = 'Today: 0/5 pending';
   });
 }
 
 function renderQuizHistory(){
   var uid = currentUser&&currentUser.uid; if(!uid) return;
+  var el = document.getElementById('quiz-history');
+  // Try ordered query first, fall back to simple query if index not ready
   db.collection('quiz').where('uid','==',uid).orderBy('date','desc').limit(7).get().then(function(snap){
-    var el = document.getElementById('quiz-history');
     if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz history yet. Start your first quiz! 🧠</div>';return;}
-    var html = '';
+    var html='';
     snap.forEach(function(doc){
-      var d = doc.data();
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">'+
+      var d=doc.data();
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">'+
         '<span style="color:#374151;font-weight:600">'+new Date(d.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</span>'+
         '<span style="color:var(--green);font-weight:700">₹'+d.score+' earned</span>'+
         '<span style="color:#7c3aed;font-weight:700">🪙 +'+d.coinsWon+' coins</span>'+
         '<span style="background:'+(d.score>=4?'#d1fae5':'#fef3c7')+';color:'+(d.score>=4?'#065f46':'#92400e')+';border-radius:50px;padding:2px 8px;font-weight:700">'+d.score+'/5</span>'+
       '</div>';
     });
-    el.innerHTML = html;
-  }).catch(function(){ document.getElementById('quiz-history').innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">History not available yet.</div>'; });
+    el.innerHTML=html;
+  }).catch(function(){
+    // Fallback - simple query without orderBy (works even without index)
+    db.collection('quiz').where('uid','==',uid).limit(7).get().then(function(snap){
+      if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz history yet. Start your first quiz! 🧠</div>';return;}
+      var rows=[];
+      snap.forEach(function(doc){rows.push(doc.data());});
+      rows.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+      var html='';
+      rows.forEach(function(d){
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">'+
+          '<span style="color:#374151;font-weight:600">'+new Date(d.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</span>'+
+          '<span style="color:var(--green);font-weight:700">₹'+d.score+'</span>'+
+          '<span style="color:#7c3aed;font-weight:700">🪙 +'+d.coinsWon+'</span>'+
+          '<span style="background:'+(d.score>=4?'#d1fae5':'#fef3c7')+';color:'+(d.score>=4?'#065f46':'#92400e')+';border-radius:50px;padding:2px 8px;font-weight:700">'+d.score+'/5</span>'+
+        '</div>';
+      });
+      el.innerHTML=html;
+    }).catch(function(){
+      el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">Complete your first quiz to see history! 🧠</div>';
+    });
+  });
 }
 
 function renderAllQuizResults(){
