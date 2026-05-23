@@ -602,6 +602,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div id="report-content"></div>
+
+    <!-- DAILY ACTIVITY REPORT -->
+    <div class="section-card" id="daily-activity-card">
+      <div class="section-head" style="background:linear-gradient(135deg,#0f766e,#14b8a6)">
+        <div>
+          <div class="section-title">📋 Daily Activity Report</div>
+          <div class="section-sub" id="daily-activity-date">Today's learning & play summary</div>
+        </div>
+        <div style="display:flex;gap:5px">
+          <button onclick="loadDailyActivity(-1)" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:26px;height:26px;color:#fff;font-size:14px;cursor:pointer">‹</button>
+          <button onclick="loadDailyActivity(1)" id="daily-next-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:26px;height:26px;color:#fff;font-size:14px;cursor:pointer;opacity:.3">›</button>
+        </div>
+      </div>
+      <div class="section-body" id="daily-activity-body">
+        <div style="text-align:center;padding:16px;color:#9ca3af;font-size:12px">Loading activity data...</div>
+      </div>
+    </div>
+
     <div class="dl-btns">
       <button class="btn btn-purple" onclick="downloadPDF()">📄 PDF</button>
       <button class="btn" style="background:var(--pink);color:#fff" onclick="downloadJPG()">🖼️ JPG</button>
@@ -736,6 +754,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select id="add-user-role">
         <option value="parent">👨‍👩‍ Parent — manage tasks & rewards</option>
         <option value="child">🧒 Child — own dashboard only</option>
+        <option value="viewer">👁️ Viewer — view everything + quiz</option>
         <option value="admin">👑 Admin — full control</option>
       </select>
     </div>
@@ -911,13 +930,25 @@ function resetAllData(){data={version:4,tasks:{vacation:defVacation(),school:def
 
 function applyRolePermissions(){
   var p=currentUserProfile||{}, role=p.role||'child';
-  var isAdmin=role==='admin', isParent=role==='parent'||isAdmin, isChild=role==='child';
+  var isAdmin  = role==='admin';
+  var isParent = role==='parent'||isAdmin;
+  var isChild  = role==='child';
+  var isViewer = role==='viewer';
+
   // Apply avatar to pill
   var avatarHtml = p.photoURL
     ? '<img src="'+p.photoURL+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:3px">'
     : (p.avatar||'👤');
   document.getElementById('user-pill').innerHTML = avatarHtml+' '+(p.name||'Me')+' ▾';
+
+  // Admin tab — admin only
   document.getElementById('tab-admin').style.display=isAdmin?'block':'none';
+
+  // Kids tab — hide for viewers (they can watch but kids zone is for kids)
+  var kidsTab = document.getElementById('tab-kids');
+  if(kidsTab) kidsTab.style.display = isViewer?'none':'block';
+
+  // Child — lock to their own kid card
   if(isChild&&p.linkedKid){
     selectedKid=p.linkedKid;
     ['dhruv','vedika'].forEach(function(k){
@@ -925,11 +956,39 @@ function applyRolePermissions(){
       document.getElementById('card-'+k).style.opacity=p.linkedKid===k?'1':'0.4';
     });
   }
-  ['add-task-btn','spend-btn','bonus-btn','del-folder-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isParent?'':'none';});
+
+  // Parent-only buttons — hide for children and viewers
+  ['add-task-btn','spend-btn','bonus-btn','del-folder-btn'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=isParent?'':'none';
+  });
+
+  // Mode toggle — only parents can switch
   document.getElementById('mode-vacation').style.pointerEvents=isParent?'auto':'none';
   document.getElementById('mode-school').style.pointerEvents=isParent?'auto':'none';
+
+  // Viewer — make kid cards non-interactive (view only)
+  if(isViewer){
+    ['dhruv','vedika'].forEach(function(k){
+      var card=document.getElementById('card-'+k);
+      if(card) card.style.pointerEvents='none';
+    });
+    // Show a viewer banner
+    showViewerBanner(p.name||'Viewer');
+  }
+
   // Apply saved background theme
   applyBgTheme(p.bgTheme||'default');
+}
+
+function showViewerBanner(name){
+  if(document.getElementById('viewer-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'viewer-banner';
+  banner.style.cssText='background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;';
+  banner.innerHTML='<span style="font-size:16px">👁️</span><span>Welcome <strong>'+name+'</strong>! You are in <strong>View Only</strong> mode — enjoy watching the Champions journey! 🏆</span>';
+  var app = document.querySelector('.app');
+  if(app) app.insertBefore(banner, app.children[1]); // After header
 }
 
 // ══ BACKGROUND THEMES ══
@@ -990,7 +1049,7 @@ function showUserMenu(){
       '</div>'+
       '<div>'+
         '<div style="font-size:16px;font-weight:800;color:#111">'+(p.name||'User')+'</div>'+
-        '<div style="font-size:11px;color:#9ca3af">'+(p.role==='admin'?'👑 Admin':p.role==='parent'?'👨‍👩‍ Parent':'🧒 Child')+'</div>'+
+        '<div style="font-size:11px;color:#9ca3af">'+(p.role==='admin'?'👑 Admin':p.role==='parent'?'👨‍👩‍ Parent':p.role==='viewer'?'👁️ Viewer':'🧒 Child')+'</div>'+
         '<div style="font-size:11px;color:#9ca3af">'+(currentUser&&currentUser.email||'')+'</div>'+
       '</div>'+
     '</div>'+
@@ -1051,7 +1110,7 @@ function renderUsersList(){
     var html='';
     snap.forEach(function(doc){
       var u=doc.data();
-      var rc=u.role==='admin'?['#ede9fe','#5b21b6']:u.role==='parent'?['#dbeafe','#1d4ed8']:['#d1fae5','#065f46'];
+      var rc=u.role==='admin'?['#ede9fe','#5b21b6']:u.role==='parent'?['#dbeafe','#1d4ed8']:u.role==='viewer'?['#fef3c7','#92400e']:['#d1fae5','#065f46'];
       var avatarHtml = u.photoURL
         ? '<img src="'+u.photoURL+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">'
         : '<div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(u.avatar||'👤')+'</div>';
@@ -1067,7 +1126,7 @@ function renderUsersList(){
           '</div>'+
         '</div>'+
         '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">'+
-          '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑':u.role==='parent'?'👩':'🧒')+'</span>'+
+          '<span class="role-badge" style="background:'+rc[0]+';color:'+rc[1]+'">'+(u.role==='admin'?'👑 Admin':u.role==='parent'?'👩 Parent':u.role==='viewer'?'👁️ Viewer':'🧒 Child')+'</span>'+
           '<button onclick="openPasswordManager(\''+doc.id+'\',\''+u.name+'\',\''+u.email+'\')" style="background:#dbeafe;border:none;border-radius:6px;padding:5px 8px;color:#1d4ed8;cursor:pointer;font-size:11px;font-weight:700">🔑</button>'+
           (doc.id!==currentUser.uid?'<button onclick="deleteUser(\''+doc.id+'\')" style="background:#fee2e2;border:none;border-radius:6px;padding:5px 8px;color:#ef4444;cursor:pointer;font-size:11px">🗑️</button>':'')+
         '</div>'+
@@ -1210,6 +1269,7 @@ function toggleCheck(kid,day,taskId,amount){
   if(!data)return;
   var role=currentUserProfile&&currentUserProfile.role;
   if(role==='child'){showToast('Only Mummy or Papa can tick tasks! 🔒');return;}
+  if(role==='viewer'){showToast('You are in view only mode! 👁️');return;}
   var key=dayKey(kid,day,weekOffset);
   if(!data.checks[kid][key])data.checks[kid][key]={};
   var was=data.checks[kid][key][taskId];
@@ -1314,6 +1374,7 @@ function renderTasks(){
   var isParent=currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
   var isAdmin=currentUserProfile&&currentUserProfile.role==='admin';
   var isChild=currentUserProfile&&currentUserProfile.role==='child';
+  var isViewer=currentUserProfile&&currentUserProfile.role==='viewer';
   var locked=isDayLocked(selectedKid,selectedDay,weekOffset);
 
   // Update lock button
@@ -1340,15 +1401,17 @@ function renderTasks(){
       fn='showToast(\'This day is locked! Ask Papa to unlock.\')';
     } else if(locked && isAdmin){
       fn='toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
+    } else if(isViewer){
+      fn='showToast(\'You are in view only mode! 👁️\')';
     } else if(isFuture){
       fn='showToast(\'Future day!\')';
     } else {
       fn='toggleCheck(\''+selectedKid+'\','+selectedDay+',\''+t.id+'\','+t.amount+')';
     }
-    var checkStyle=isChild?'cursor:not-allowed;opacity:.6;':'';
+    var checkStyle=(isChild||isViewer)?'cursor:not-allowed;opacity:.6;':'';
     var showEdit=isParent&&(!locked||(locked&&isAdmin));
     return '<div class="task-item'+(done?' done':'')+(locked?' task-locked':'')+'">'+
-      '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'" style="'+checkStyle+'">'+(done?'✓':(isChild?'🔒':''))+'</div>'+
+      '<div class="task-check'+(done?' checked':'')+'" onclick="'+fn+'" style="'+checkStyle+'">'+(done?'✓':(isChild?'🔒':isViewer?'👁️':''))+'</div>'+
       '<div class="task-info" onclick="'+fn+'"><div class="task-name">'+t.en+'</div><div class="task-name-hi">'+t.hi+'</div>'+timeStr+'</div>'+
       '<div class="task-amount">+₹'+t.amount+'</div>'+
       (showEdit?'<div class="task-actions"><button class="task-act-btn" style="background:#ede9fe" onclick="openEditTask(\''+t.id+'\')">✏️</button><button class="task-act-btn" style="background:#fee2e2" onclick="deleteTask(\''+t.id+'\')">🗑️</button></div>':'')+
@@ -1455,7 +1518,7 @@ function switchTab(tab){
     var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
   });
   if(tab==='photos')renderFolderView();
-  if(tab==='report')renderReport();
+  if(tab==='report'){renderReport();dailyActivityOffset=0;loadDailyActivity(0);}
   if(tab==='admin')renderUsersList();
   if(tab==='quiz')initQuizTab();
   if(tab==='kids')initKidsZone();
@@ -1860,6 +1923,325 @@ function renderReport(){
   document.getElementById('report-content').innerHTML='<div class="rpt-page" id="rpt-p1"><div class="rpt-cover"><div style="font-size:32px;margin-bottom:6px">🏆</div><h2>Journey of Champions</h2><p>Dhruv & Vedika · '+modeLabel+'</p><div class="week-badge">'+weekLabel+'</div></div><div class="rpt-summary-grid">'+col(dh)+col(ve)+'</div><div class="rpt-footer">Generated by Journey of Champions · '+now.toLocaleDateString('en-IN')+'</div></div>'+detailPage(dh,'rpt-p2')+detailPage(ve,'rpt-p3');
 }
 
+// ══════════════════════════════════════
+// DAILY ACTIVITY REPORT
+// ══════════════════════════════════════
+var dailyActivityOffset = 0; // 0 = today, -1 = yesterday etc.
+
+function getActivityDateKey(offset){
+  var d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+
+function getActivityDateLabel(offset){
+  var d = new Date();
+  d.setDate(d.getDate() + offset);
+  var opts = {weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'Asia/Kolkata'};
+  if(offset===0) return 'Today — '+d.toLocaleDateString('en-IN', opts);
+  if(offset===-1) return 'Yesterday — '+d.toLocaleDateString('en-IN', opts);
+  return d.toLocaleDateString('en-IN', opts);
+}
+
+function formatIST(isoString){
+  if(!isoString) return '—';
+  try{
+    var d = new Date(isoString);
+    return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})+' IST';
+  }catch(e){return '—';}
+}
+
+function formatMins(seconds){
+  if(!seconds) return '0 min';
+  var m = Math.floor(seconds/60), s = seconds%60;
+  return m>0?(m+' min '+(s>0?s+'s':'')):s+'s';
+}
+
+function loadDailyActivity(dir){
+  if(dir!==undefined){
+    if(dailyActivityOffset + dir > 0) return;
+    dailyActivityOffset += dir;
+  }
+  var nextBtn = document.getElementById('daily-next-btn');
+  if(nextBtn) nextBtn.style.opacity = dailyActivityOffset>=0?'.3':'1';
+
+  var dateKey = getActivityDateKey(dailyActivityOffset);
+  var dateLabel = getActivityDateLabel(dailyActivityOffset);
+  var dateLabelEl = document.getElementById('daily-activity-date');
+  if(dateLabelEl) dateLabelEl.textContent = dateLabel;
+
+  var body = document.getElementById('daily-activity-body');
+  body.innerHTML='<div style="text-align:center;padding:16px;color:#9ca3af;font-size:12px">⏳ Loading...</div>';
+
+  // Fetch quiz data for BOTH kids + Mummy for this date
+  var promises = [];
+  var quizData = {};
+  var kzData = {};
+
+  // Get all users to fetch their quiz results
+  db.collection('users').get().then(function(usersSnap){
+    var users = [];
+    usersSnap.forEach(function(doc){
+      var u = doc.data();
+      u.uid = doc.id;
+      users.push(u);
+    });
+
+    // Fetch quiz results for each user
+    var quizPromises = users.map(function(u){
+      return db.collection('quiz').doc(u.uid+'_'+dateKey).get().then(function(doc){
+        if(doc.exists) quizData[u.uid] = Object.assign({}, doc.data(), {userName: u.name, avatar: u.avatar||'👤', role: u.role});
+      }).catch(function(){});
+    });
+
+    // Fetch kids zone data for each kid
+    var kzPromises = users.filter(function(u){return u.linkedKid;}).map(function(u){
+      return db.collection('kidszone').doc(u.uid+'_'+dateKey).get().then(function(doc){
+        if(doc.exists) kzData[u.uid] = Object.assign({}, doc.data(), {userName: u.name, linkedKid: u.linkedKid});
+      }).catch(function(){});
+    });
+
+    return Promise.all(quizPromises.concat(kzPromises));
+  }).then(function(){
+    renderDailyActivity(dateKey, quizData, kzData);
+  }).catch(function(e){
+    body.innerHTML='<div style="text-align:center;padding:16px;color:#9ca3af;font-size:12px">Could not load activity data.</div>';
+  });
+}
+
+function renderDailyActivity(dateKey, quizData, kzData){
+  var body = document.getElementById('daily-activity-body');
+  var html = '';
+
+  // ── QUIZ SECTION ──
+  var quizUsers = Object.values(quizData);
+  html += '<div style="margin-bottom:16px">';
+  html += '<div style="font-size:12px;font-weight:800;color:#0f766e;margin-bottom:10px;display:flex;align-items:center;gap:6px">'+
+    '<div style="width:28px;height:28px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:14px">🧠</div>'+
+    'Quiz Activity</div>';
+
+  if(quizUsers.length === 0){
+    html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;font-size:12px;color:#9ca3af;text-align:center">No quiz played on this day</div>';
+  } else {
+    quizUsers.forEach(function(q){
+      var scoreColor = q.score>=4?'#059669':q.score>=2?'#f59e0b':'#ef4444';
+      var scoreBg = q.score>=4?'#d1fae5':q.score>=2?'#fef3c7':'#fee2e2';
+      // Questions answered correctly
+      var correctQ = [];
+      // We don't store individual answers but we know score
+      html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #e5e7eb">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<div style="font-size:20px">'+(q.avatar||'👤')+'</div>';
+      html += '<div><div style="font-size:13px;font-weight:800;color:#111">'+q.userName+'</div>';
+      html += '<div style="font-size:10px;color:#9ca3af">'+(q.role==='admin'?'👑 Admin':q.role==='parent'?'👩 Parent':'🧒 Child')+'</div></div>';
+      html += '</div>';
+      html += '<div style="text-align:right">';
+      html += '<div style="background:'+scoreBg+';color:'+scoreColor+';border-radius:50px;padding:3px 10px;font-size:13px;font-weight:900">'+q.score+'/5</div>';
+      html += '<div style="font-size:10px;color:#9ca3af;margin-top:2px">₹'+q.score+' earned</div>';
+      html += '</div></div>';
+
+      // Time played
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">';
+      html += '<div style="background:#fff;border-radius:7px;padding:7px;border:1px solid #e5e7eb;text-align:center">';
+      html += '<div style="font-size:10px;color:#9ca3af;margin-bottom:2px">⏰ Quiz Time (IST)</div>';
+      html += '<div style="font-size:12px;font-weight:800;color:#0f766e">'+formatIST(q.date)+'</div>';
+      html += '</div>';
+      html += '<div style="background:#fff;border-radius:7px;padding:7px;border:1px solid #e5e7eb;text-align:center">';
+      html += '<div style="font-size:10px;color:#9ca3af;margin-bottom:2px">🪙 Coins Won</div>';
+      html += '<div style="font-size:12px;font-weight:800;color:#7c3aed">'+q.coinsWon+' coins</div>';
+      html += '</div></div>';
+
+      // Score visual
+      html += '<div style="display:flex;gap:4px;margin-bottom:10px">';
+      for(var i=0;i<5;i++){
+        html += '<div style="flex:1;height:6px;border-radius:50px;background:'+(i<q.score?scoreColor:'#e5e7eb')+'"></div>';
+      }
+      html += '</div>';
+
+      // Detailed Q&A breakdown — only for kids
+      if(q.role==='child' && q.answers && q.answers.length>0){
+        html += '<div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">📝 Question by Question Breakdown</div>';
+        q.answers.forEach(function(a, qi){
+          var isCorrect = a.correct;
+          var isTimeout = a.userAnswer===-1;
+          var bgColor = isCorrect?'#f0fdf4':isTimeout?'#fef3c7':'#fef2f2';
+          var borderColor = isCorrect?'#86efac':isTimeout?'#fcd34d':'#fca5a5';
+          var icon = isCorrect?'✅':isTimeout?'⏰':'❌';
+          html += '<div style="background:'+bgColor+';border:1px solid '+borderColor+';border-radius:8px;padding:8px;margin-bottom:6px">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">';
+          html += '<div style="font-size:11px;font-weight:800;color:#374151">Q'+(qi+1)+'. '+a.q+'</div>';
+          html += '<span style="font-size:14px;flex-shrink:0;margin-left:6px">'+icon+'</span>';
+          html += '</div>';
+          // Options
+          html += '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px">';
+          a.options.forEach(function(opt, oi){
+            var isCorrectOpt = oi===a.correctAnswer;
+            var isUserOpt = oi===a.userAnswer;
+            var optColor = isCorrectOpt?'#059669':isUserOpt&&!isCorrectOpt?'#ef4444':'#9ca3af';
+            var optBg = isCorrectOpt?'#d1fae5':isUserOpt&&!isCorrectOpt?'#fee2e2':'transparent';
+            html += '<div style="font-size:10px;padding:3px 7px;border-radius:5px;background:'+optBg+';color:'+optColor+';font-weight:'+(isCorrectOpt||isUserOpt?'700':'400')+'">';
+            html += ['A','B','C','D'][oi]+'. '+opt;
+            if(isCorrectOpt) html += ' ✓';
+            if(isUserOpt&&!isCorrectOpt) html += ' ✗ (selected)';
+            if(isUserOpt&&isCorrectOpt) html += ' ← selected';
+            html += '</div>';
+          });
+          html += '</div>';
+          // Time info
+          html += '<div style="font-size:10px;color:#6b7280">';
+          if(isTimeout) html += '⏰ Time ran out';
+          else html += '⏱️ Answered in '+a.timeTaken+'s';
+          html += '</div>';
+          html += '</div>';
+        });
+      } else if(q.role!=='child'){
+        // Parents/Admin — quiz is for fun only, no Q&A stored
+        html += '<div style="background:#f0fdf4;border-radius:8px;padding:10px;font-size:12px;color:#065f46;text-align:center">';
+        html += '<div style="font-size:16px;margin-bottom:4px">😊</div>';
+        html += '<strong>Quiz played for fun!</strong><br>';
+        html += 'Score: '+q.score+'/5 · 🪙 '+q.coinsWon+' coins won<br>';
+        html += '<span style="font-size:10px;color:#9ca3af">Detailed Q&A saved only for kids</span>';
+        html += '</div>';
+      } else {
+        // Old kid records without detailed answers — show topic-based summary
+        var ageGroup = q.userName&&q.userName.toLowerCase().indexOf('dhruv')>-1?'dhruv':'vedika';
+        var topics = ageGroup==='dhruv'?
+          ['Basic Maths','General Knowledge','Animals & Nature','India Facts','Science Basics']:
+          ['Science & Biology','History & Geography','Mathematics','Literature','Current Affairs'];
+        var learnedTopics = topics.slice(0, q.score);
+        var missedTopics = topics.slice(q.score);
+        html += '<div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:5px">📚 Topics (estimated):</div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+        learnedTopics.forEach(function(t){
+          html += '<span style="background:#dbeafe;color:#1d4ed8;border-radius:50px;padding:2px 8px;font-size:10px;font-weight:600">✅ '+t+'</span>';
+        });
+        missedTopics.forEach(function(t){
+          html += '<span style="background:#fee2e2;color:#991b1b;border-radius:50px;padding:2px 8px;font-size:10px;font-weight:600">❌ '+t+'</span>';
+        });
+        html += '</div>';
+        html += '<div style="font-size:10px;color:#9ca3af;margin-top:5px">💡 Full Q&A breakdown available from next quiz</div>';
+      }
+
+      html += '</div>'; // end user quiz card
+    });
+  }
+  html += '</div>'; // end quiz section
+
+  // ── KIDS ZONE SECTION ──
+  html += '<div style="margin-bottom:8px">';
+  html += '<div style="font-size:12px;font-weight:800;color:#0f766e;margin-bottom:10px;display:flex;align-items:center;gap:6px">'+
+    '<div style="width:28px;height:28px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:14px">🎮</div>'+
+    'Kids Zone Activity</div>';
+
+  var kzUsers = Object.values(kzData);
+  if(kzUsers.length === 0){
+    html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;font-size:12px;color:#9ca3af;text-align:center">Kids Zone not used on this day</div>';
+  } else {
+    // Show combined summary (both kids get same time)
+    var kzSample = kzUsers[0];
+    var totalSecs = kzSample.secondsUsed||0;
+    var coinsEarned = kzSample.coinsEarned||0;
+    var pctUsed = Math.round(totalSecs/3600*100);
+
+    html += '<div style="background:#f0fdfa;border-radius:10px;padding:12px;border:1px solid #99f6e4;margin-bottom:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div><div style="font-size:13px;font-weight:800;color:#0f766e">🐯 Dhruv & 🐼 Vedika</div>';
+    html += '<div style="font-size:10px;color:#6b7280">Played together</div></div>';
+    html += '<div style="text-align:right"><div style="font-size:18px;font-weight:900;color:#0f766e">'+formatMins(totalSecs)+'</div>';
+    html += '<div style="font-size:10px;color:#9ca3af">of 60 min limit</div></div>';
+    html += '</div>';
+
+    // Time bar
+    html += '<div style="background:#e5e7eb;border-radius:50px;height:8px;overflow:hidden;margin-bottom:6px">';
+    html += '<div style="height:8px;border-radius:50px;background:'+(pctUsed>=80?'#ef4444':pctUsed>=50?'#f59e0b':'#059669')+';width:'+Math.min(100,pctUsed)+'%"></div>';
+    html += '</div>';
+    html += '<div style="font-size:10px;color:#6b7280;margin-bottom:10px">'+pctUsed+'% of daily limit used</div>';
+
+    // Stats grid
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">';
+    html += '<div style="background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #e5e7eb">';
+    html += '<div style="font-size:16px">⏱️</div><div style="font-size:12px;font-weight:800;color:#0f766e">'+formatMins(totalSecs)+'</div>';
+    html += '<div style="font-size:9px;color:#9ca3af">Time Played</div></div>';
+    html += '<div style="background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #e5e7eb">';
+    html += '<div style="font-size:16px">🪙</div><div style="font-size:12px;font-weight:800;color:#7c3aed">'+coinsEarned+'</div>';
+    html += '<div style="font-size:9px;color:#9ca3af">Coins Each</div></div>';
+    html += '<div style="background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #e5e7eb">';
+    html += '<div style="font-size:16px">'+(pctUsed<50?'😊':pctUsed<80?'😄':'⚠️')+'</div>';
+    html += '<div style="font-size:12px;font-weight:800;color:'+(pctUsed<80?'#059669':'#ef4444')+'">'+(pctUsed<50?'Healthy':pctUsed<80?'Good':'High')+'</div>';
+    html += '<div style="font-size:9px;color:#9ca3af">Screen Time</div></div>';
+    html += '</div>';
+
+    // IST time info
+    html += '<div style="background:#fff;border-radius:8px;padding:8px;border:1px solid #e5e7eb;font-size:11px;color:#374151">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">';
+    html += '<span style="font-weight:700">📅 Activity Date (IST)</span>';
+    html += '<span style="color:#0f766e;font-weight:700">'+new Date(dateKey).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Kolkata'})+'</span>';
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between">';
+    html += '<span style="font-weight:700">💰 Coins per kid</span>';
+    html += '<span style="color:#7c3aed;font-weight:700">'+coinsEarned+' coins (= ₹'+(coinsEarned/20).toFixed(2)+')</span>';
+    html += '</div></div>';
+    html += '</div>';
+
+    // Game time breakdown
+    // Since we don't store per-game time, show estimated breakdown based on coins
+    html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;border:1px solid #e5e7eb">';
+    html += '<div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px">🎮 Games Likely Played (based on coins earned)</div>';
+
+    var gameCoins = coinsEarned;
+    var games = [];
+    if(gameCoins>=20) games.push({name:'🔤 Word Search',coins:20,desc:'Found hidden words'});
+    if(gameCoins>=15) games.push({name:'🧩 Number Puzzle',coins:15,desc:'Solved sliding puzzle'});
+    if(gameCoins>=10) games.push({name:'🃏 Memory Cards',coins:10,desc:'Matched emoji pairs'});
+    if(gameCoins>0&&gameCoins<10) games.push({name:'⭕ Tic Tac Toe',coins:Math.min(gameCoins,15),desc:'Played rounds together'});
+    if(games.length===0) games.push({name:'🎮 Games played',coins:0,desc:'No coins earned yet'});
+
+    games.slice(0,3).forEach(function(g){
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6">';
+      html += '<div><div style="font-size:12px;font-weight:700">'+g.name+'</div>';
+      html += '<div style="font-size:10px;color:#9ca3af">'+g.desc+'</div></div>';
+      html += '<span style="font-size:11px;font-weight:700;color:#7c3aed">+'+g.coins+'🪙</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>'; // end kz section
+
+  // ── COMBINED SUMMARY ──
+  var hasQuiz = quizUsers.length>0;
+  var hasKz = kzUsers.length>0;
+  if(hasQuiz||hasKz){
+    html += '<div style="background:linear-gradient(135deg,#0f766e,#14b8a6);border-radius:10px;padding:12px;color:#fff;margin-top:4px">';
+    html += '<div style="font-size:11px;font-weight:800;margin-bottom:8px">📊 Day Summary</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
+    if(hasQuiz){
+      var totalQuizEarned = quizUsers.reduce(function(s,q){return s+q.score;},0);
+      var totalCoinsWon = quizUsers.reduce(function(s,q){return s+(q.coinsWon||0);},0);
+      html += '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px">';
+      html += '<div style="font-weight:800;margin-bottom:3px">🧠 Quiz</div>';
+      html += '<div>'+quizUsers.length+' player'+(quizUsers.length>1?'s':'')+' participated</div>';
+      html += '<div>Total ₹'+totalQuizEarned+' earned</div>';
+      html += '<div>🪙 '+totalCoinsWon+' coins won</div>';
+      html += '</div>';
+    }
+    if(hasKz){
+      var kzSec = (Object.values(kzData)[0]||{}).secondsUsed||0;
+      html += '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px">';
+      html += '<div style="font-weight:800;margin-bottom:3px">🎮 Kids Zone</div>';
+      html += '<div>'+formatMins(kzSec)+' played</div>';
+      html += '<div>Both kids together</div>';
+      html += '<div>🪙 '+(Object.values(kzData)[0]||{coinsEarned:0}).coinsEarned+' coins each</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  } else {
+    html += '<div style="text-align:center;padding:10px;background:#f9fafb;border-radius:10px;font-size:12px;color:#9ca3af">No quiz or Kids Zone activity recorded on this day.</div>';
+  }
+
+  body.innerHTML = html;
+}
+
 function downloadPDF(){showToast('Preparing PDF...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){ls('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){var pages=['rpt-p1','rpt-p2','rpt-p3'],pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),pW=pdf.internal.pageSize.getWidth(),pH=pdf.internal.pageSize.getHeight(),done=0;function cap(i){var el=document.getElementById(pages[i]);if(!el){done++;if(done===pages.length)pdf.save('JOC_Report.pdf');return;}html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){if(i>0)pdf.addPage();var imgW=pW-16,imgH=(canvas.height*imgW)/canvas.width;pdf.addImage(canvas.toDataURL('image/png'),'PNG',8,8,imgW,Math.min(imgH,pH-16));done++;if(done===pages.length){pdf.save('JOC_Report.pdf');showToast('PDF saved! 📄');}else cap(i+1);});}cap(0);});});}
 function downloadJPG(){showToast('Preparing...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){['rpt-p1','rpt-p2','rpt-p3'].forEach(function(pid,i){var el=document.getElementById(pid);if(!el)return;html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){var a=document.createElement('a');a.download='JOC_'+['Summary','Dhruv','Vedika'][i]+'.jpg';a.href=canvas.toDataURL('image/jpeg',.95);a.click();});});setTimeout(function(){showToast('3 images saved! 🖼️');},1000);});}
 
@@ -1874,6 +2256,7 @@ var quizQuestions = [];
 var quizCurrentIdx = 0;
 var quizScore = 0;
 var quizAnswered = false;
+var quizAnswers = []; // stores {q, options, answer, userAnswer, correct, timeTaken}
 var quizSpinning = false;
 var spinAnimFrame = null;
 var SPIN_PRIZES = [10, 20, 10, 50, 10, 30, 10, 100, 10, 20];
@@ -2033,6 +2416,7 @@ function startQuiz(){
   quizQuestions = shuffled.slice(0,5);
   quizCurrentIdx = 0;
   quizScore = 0;
+  quizAnswers = [];
 
   // Try AI first, fall back to question bank if fails
   fetch('https://api.anthropic.com/v1/messages',{
@@ -2182,7 +2566,15 @@ function timeUp(){
   if(quizAnswered) return;
   quizAnswered = true;
   var q = quizQuestions[quizCurrentIdx];
-  // Show correct answer
+  // Record as time out
+  quizAnswers.push({
+    q: q.q,
+    options: q.options,
+    correctAnswer: q.answer,
+    userAnswer: -1, // -1 means timed out
+    correct: false,
+    timeTaken: 10
+  });
   q.options.forEach(function(_,i){
     var btn=document.getElementById('opt-'+i);
     if(!btn) return;
@@ -2227,7 +2619,17 @@ function answerQuestion(idx){
   quizAnswered = true;
   var q = quizQuestions[quizCurrentIdx];
   var correct = idx === q.answer;
+  var timeTaken = 10 - quizTimeLeft;
   if(correct) quizScore++;
+  // Record this answer
+  quizAnswers.push({
+    q: q.q,
+    options: q.options,
+    correctAnswer: q.answer,
+    userAnswer: idx,
+    correct: correct,
+    timeTaken: timeTaken
+  });
   q.options.forEach(function(_,i){
     var btn=document.getElementById('opt-'+i);
     if(!btn) return;
@@ -2239,7 +2641,7 @@ function answerQuestion(idx){
   fb.style.display='block';
   fb.style.background=correct?'#d1fae5':'#fee2e2';
   fb.style.color=correct?'#065f46':'#991b1b';
-  fb.textContent=correct?'✅ Correct! +₹1 ('+(quizTimeLeft)+'s remaining)':'❌ Wrong! The answer was: '+q.options[q.answer];
+  fb.textContent=correct?'✅ Correct! +₹1 ('+timeTaken+'s taken)':'❌ Wrong! The answer was: '+q.options[q.answer];
   document.getElementById('q-score-lbl').textContent='Score: ₹'+quizScore;
   var nextBtn=document.getElementById('q-next-btn');
   nextBtn.style.display='block';
@@ -2360,18 +2762,22 @@ function saveQuizResult(score, coins){
   var uid=currentUser&&currentUser.uid; if(!uid) return;
   var todayKey=getTodayKey();
   var p=currentUserProfile||{};
-  // Save quiz result
+  var isKid = p.role==='child';
+  // Save quiz result — full Q&A only for kids, summary only for parents
   db.collection('quiz').doc(uid+'_'+todayKey).set({
     uid:uid, userName:p.name||'User', score:score,
     coinsWon:coins, date:new Date().toISOString(),
-    completed:true
+    completed:true, role:p.role||'child',
+    answers: isKid ? quizAnswers : [] // Only save detailed Q&A for kids
   }).then(function(){
+    // AUTO CLEANUP — only for kids, delete Q&A older than 5 days
+    if(isKid) autoCleanupQuiz(uid);
     // Update wallet
     return db.collection('wallets').doc(uid).get();
   }).then(function(doc){
     var current = doc.exists?(doc.data().coins||0):0;
     var currentStreak = doc.exists?(doc.data().quizStreak||0):0;
-    var lastDate = doc.exists?(doc.data().lastQuizDate||''):'' ;
+    var lastDate = doc.exists?(doc.data().lastQuizDate||''):'';
     var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
     var yKey = yesterday.getFullYear()+'-'+(yesterday.getMonth()+1)+'-'+yesterday.getDate();
     var newStreak = (lastDate===yKey||lastDate===todayKey) ? currentStreak+1 : 1;
@@ -2386,18 +2792,15 @@ function saveQuizResult(score, coins){
     if(score>0 && data){
       var kid = currentUserProfile&&currentUserProfile.linkedKid;
       if(kid){
-        // Kids: add to their bonus earnings
         if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
         if(!data.bonuses[kid]) data.bonuses[kid]=[];
         data.bonuses[kid].push({amount:score,reason:'Quiz earnings 🧠',date:new Date().toLocaleDateString('en-IN')});
         saveData();
       }
-      // For Mummy/Papa (no linkedKid) — coins are stored in wallet only, no task bonus needed
     }
     showToast('🎉 ₹'+score+' earned + '+coins+' coins added to wallet!');
     renderWallet();
     renderQuizHistory();
-    // Go back to start state after 3s
     setTimeout(function(){
       document.getElementById('quiz-state-spin').classList.add('hidden');
       document.getElementById('quiz-state-question').classList.add('hidden');
@@ -2407,6 +2810,42 @@ function saveQuizResult(score, coins){
       quizSpinning=false;
     },3000);
   }).catch(function(e){ showToast('Error saving: '+e.message); console.error(e); });
+}
+
+// ── AUTO CLEANUP — Keep only last 5 days of quiz Q&A ──
+function autoCleanupQuiz(uid){
+  // Generate keys for last 5 days (keep these)
+  var keepKeys = [];
+  for(var i=0; i<5; i++){
+    var d = new Date();
+    d.setDate(d.getDate()-i);
+    keepKeys.push(uid+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+  }
+
+  // Fetch all quiz docs for this user
+  db.collection('quiz').where('uid','==',uid).get().then(function(snap){
+    var batch = db.batch();
+    var deleteCount = 0;
+    snap.forEach(function(doc){
+      if(keepKeys.indexOf(doc.id) === -1){
+        // This record is older than 5 days
+        // Keep score/coins but remove the heavy answers array
+        if(doc.data().answers && doc.data().answers.length > 0){
+          // Update: remove answers field, keep summary data
+          batch.update(doc.ref, {
+            answers: [],
+            cleaned: true
+          });
+          deleteCount++;
+        }
+      }
+    });
+    if(deleteCount > 0){
+      batch.commit().then(function(){
+        console.log('Cleaned '+deleteCount+' old quiz records');
+      }).catch(function(e){ console.log('Cleanup error:', e); });
+    }
+  }).catch(function(e){ console.log('Cleanup fetch error:', e); });
 }
 
 // ── REDEEM ──
@@ -2550,7 +2989,26 @@ function saveKzProgress(){
     date: getTodayKey(),
     secondsUsed: secondsUsed,
     coinsEarned: kzTodayCoins
-  });
+  }).then(function(){
+    // Auto cleanup kidszone records older than 5 days
+    autoCleanupKidszone(uid);
+  }).catch(function(){});
+}
+
+function autoCleanupKidszone(uid){
+  var keepKeys = [];
+  for(var i=0;i<5;i++){
+    var d=new Date(); d.setDate(d.getDate()-i);
+    keepKeys.push(uid+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+  }
+  db.collection('kidszone').where('uid','==',uid).get().then(function(snap){
+    var batch = db.batch();
+    var count = 0;
+    snap.forEach(function(doc){
+      if(keepKeys.indexOf(doc.id)===-1){ batch.delete(doc.ref); count++; }
+    });
+    if(count>0) batch.commit().then(function(){ console.log('Cleaned '+count+' old kidszone records'); });
+  }).catch(function(){});
 }
 
 function showTimeUp(){
