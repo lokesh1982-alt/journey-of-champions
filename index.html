@@ -4607,7 +4607,7 @@ function downloadStatementPDF(){
     doc.setFontSize(8);
     doc.text('Journey of Champions — '+name+'\'s Statement — '+new Date().toLocaleDateString('en-IN'),pageW/2,285,{align:'center'});
 
-    doc.save('JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\
+    doc.save('JOC_Statement_'+name+'.pdf');
     showToast('📄 PDF downloaded!');
   });
 }
@@ -4653,7 +4653,7 @@ function downloadStatementExcel(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\
+  a.download='JOC_Statement_'+name+'.csv';
   a.click();
   URL.revokeObjectURL(url);
   showToast('📊 Excel file downloaded!');
