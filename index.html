@@ -38,6 +38,47 @@
 <style>
 /* Safe area for iPhone notch */
 body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+
+/* UTILITY CLASSES - replaces repeated inline styles */
+.fc{display:flex;align-items:center}
+.fc-sb{display:flex;align-items:center;justify-content:space-between}
+.fc-c{display:flex;align-items:center;justify-content:center}
+.fc-col{display:flex;flex-direction:column}
+.tc{text-align:center}
+.fw7{font-weight:700}
+.fw8{font-weight:800}
+.fw9{font-weight:900}
+.fs10{font-size:10px}
+.fs11{font-size:11px}
+.fs12{font-size:12px}
+.fs13{font-size:13px}
+.fs14{font-size:14px}
+.c-gray{color:#9ca3af}
+.c-dark{color:#374151}
+.c-green{color:#059669}
+.c-red{color:#ef4444}
+.c-purple{color:#7c3aed}
+.c-blue{color:#1d4ed8}
+.bg-light{background:#f9fafb}
+.br8{border-radius:8px}
+.br10{border-radius:10px}
+.p8{padding:8px}
+.p10{padding:10px}
+.p12{padding:12px}
+.mb4{margin-bottom:4px}
+.mb6{margin-bottom:6px}
+.mb8{margin-bottom:8px}
+.mb10{margin-bottom:10px}
+.mb12{margin-bottom:12px}
+.mt4{margin-top:4px}
+.mt6{margin-top:6px}
+.mt8{margin-top:8px}
+.w100{width:100%}
+.cur-p{cursor:pointer}
+.ov-h{overflow:hidden}
+.pos-r{position:relative}
+.ml-a{margin-left:auto}
+
 </style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -219,6 +260,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="spinner"></div>
     <div style="font-size:14px;color:#6b7280;font-weight:700">Journey of Champions</div>
     <div style="font-size:11px;color:#9ca3af;margin-top:4px" id="loading-msg">Starting up...</div>
+    <div id="loading-slow-msg" style="display:none;margin-top:16px;text-align:center">
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Slow connection? Try again:</div>
+      <button onclick="location.reload()" style="border:none;border-radius:50px;padding:8px 20px;background:#6d28d9;color:#fff;font-size:12px;font-weight:700;cursor:pointer">🔄 Retry</button>
+    </div>
   </div>
 </div>
 
@@ -920,9 +965,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 <script>
-// ══════════════════════════════════════
-// FIREBASE CONFIG (Lokesh's project)
-// ══════════════════════════════════════
+
 var firebaseConfig = {
   apiKey: "AIzaSyCBVOHYod1Tlyedsjg_ynWqQQ2FciRp1vc",
   authDomain: "journey-of-champions-2a9b7.firebaseapp.com",
@@ -935,7 +978,7 @@ var db, auth, currentUser, currentUserProfile, dataLoaded=false;
 var data = null;
 
 function loadFirebase(cb){
-  // Firebase already loaded in <head> — call callback immediately
+  
   cb();
 }
 
@@ -953,26 +996,35 @@ loadFirebase(function(){
   firebase.initializeApp(firebaseConfig);
   db=firebase.firestore();
   auth=firebase.auth();
-  // Enable offline persistence for Firestore (faster loads)
+  
   db.enablePersistence({synchronizeTabs:true}).catch(function(){});
   if(lm) lm.textContent = 'Checking login...';
-  // Set persistence to LOCAL so mobile remembers login
+  
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function(){
     auth.onAuthStateChanged(function(user){
       clearTimeout(loadingTimer);
       if(user){
         currentUser=user;
+        var lm=document.getElementById('loading-msg');
+        if(lm) lm.textContent='Loading your data...';
         db.collection('users').doc(user.uid).get().then(function(doc){
           if(doc.exists){currentUserProfile=doc.data();}
           else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
-          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
+          // Show app shell IMMEDIATELY — don't wait for all data
+          showScreen('app');
+          applyRolePermissions();
+          // Load app data in background
+          loadAppData(function(){
+            render();
+            setTimeout(checkBirthday,1500);
+          });
         }).catch(function(){showScreen('login');showErr('Could not load profile. Try again.');});
       } else {
         currentUser=null;currentUserProfile=null;showScreen('login');
       }
     });
   }).catch(function(){
-    // If persistence fails (some browsers), still try normal auth
+    
     auth.onAuthStateChanged(function(user){
       clearTimeout(loadingTimer);
       if(user){
@@ -980,7 +1032,9 @@ loadFirebase(function(){
         db.collection('users').doc(user.uid).get().then(function(doc){
           if(doc.exists){currentUserProfile=doc.data();}
           else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
-          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
+          showScreen('app');
+          applyRolePermissions();
+          loadAppData(function(){render();setTimeout(checkBirthday,1500);});
         }).catch(function(){showScreen('login');});
       } else {currentUser=null;currentUserProfile=null;showScreen('login');}
     });
@@ -992,12 +1046,20 @@ function showScreen(n){document.querySelectorAll('.screen').forEach(function(s){
 var loadingTimer=null;
 function startLoadingTimeout(){
   clearTimeout(loadingTimer);
+  // Show retry button after 6 seconds
+  setTimeout(function(){
+    var slowMsg=document.getElementById('loading-slow-msg');
+    if(slowMsg&&document.getElementById('screen-loading').classList.contains('active')){
+      slowMsg.style.display='block';
+    }
+  },6000);
+  // Hard timeout after 15 seconds
   loadingTimer=setTimeout(function(){
     if(document.getElementById('screen-loading').classList.contains('active')){
       showScreen('login');
       showErr('Connection timeout. Check internet and try again.');
     }
-  },10000);
+  },15000);
 }
 
 function switchLoginTab(t){
@@ -1048,12 +1110,11 @@ function doLogout(){
   auth.signOut().then(function(){data=null;dataLoaded=false;showScreen('login');}).catch(function(){data=null;dataLoaded=false;showScreen('login');});
 }
 
-
 function loadAppData(cb){
   db.collection('appdata').doc('main').onSnapshot(function(doc){
     if(doc.exists){
       data=doc.data();
-      // Safely add missing fields without wiping existing data
+      
       if(!data.tasks||!data.tasks.vacation||!data.tasks.school){
         if(!data.tasks) data.tasks={};
         if(!data.tasks.vacation) data.tasks.vacation=defVacation();
@@ -1070,7 +1131,7 @@ function loadAppData(cb){
       if(!data.folders) data.folders={dhruv:{},vedika:{}};
       if(!data.files) data.files={dhruv:{},vedika:{}};
     } else {
-      // Only create fresh data if nothing exists at all in Firebase
+      
       data={version:4,tasks:{vacation:defVacation(),school:defSchool()},checks:{dhruv:{},vedika:{}},goals:{dhruv:{name:'',target:0},vedika:{name:'',target:0}},spent:{dhruv:0,vedika:0},bonuses:{dhruv:[],vedika:[]},folders:{dhruv:{},vedika:{}},files:{dhruv:{},vedika:{}}};
       db.collection('appdata').doc('main').set(data);
     }
@@ -1087,20 +1148,20 @@ function applyRolePermissions(){
   var isChild  = role==='child';
   var isViewer = role==='viewer';
 
-  // Apply avatar to pill
+  
   var avatarHtml = p.photoURL
     ? '<img src="'+p.photoURL+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:3px">'
     : (p.avatar||'👤');
   document.getElementById('user-pill').innerHTML = avatarHtml+' '+(p.name||'Me')+' ▾';
 
-  // Admin tab — admin only
+  
   document.getElementById('tab-admin').style.display=isAdmin?'block':'none';
 
-  // Kids tab — hide for viewers (they can watch but kids zone is for kids)
+  
   var kidsTab = document.getElementById('tab-kids');
   if(kidsTab) kidsTab.style.display = isViewer?'none':'block';
 
-  // Child — lock to their own kid card
+  
   if(isChild&&p.linkedKid){
     selectedKid=p.linkedKid;
     ['dhruv','vedika'].forEach(function(k){
@@ -1109,27 +1170,27 @@ function applyRolePermissions(){
     });
   }
 
-  // Parent-only buttons — hide for children and viewers
+  
   ['add-task-btn','spend-btn','bonus-btn','del-folder-btn'].forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.style.display=isParent?'':'none';
   });
 
-  // Mode toggle — only parents can switch
+  
   document.getElementById('mode-vacation').style.pointerEvents=isParent?'auto':'none';
   document.getElementById('mode-school').style.pointerEvents=isParent?'auto':'none';
 
-  // Viewer — make kid cards non-interactive (view only)
+  
   if(isViewer){
     ['dhruv','vedika'].forEach(function(k){
       var card=document.getElementById('card-'+k);
       if(card) card.style.pointerEvents='none';
     });
-    // Show a viewer banner
+    
     showViewerBanner(p.name||'Viewer');
   }
 
-  // Apply saved background theme
+  
   applyBgTheme(p.bgTheme||'default');
 }
 
@@ -1140,10 +1201,9 @@ function showViewerBanner(name){
   banner.style.cssText='background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;';
   banner.innerHTML='<span style="font-size:16px">👁️</span><span>Welcome <strong>'+name+'</strong>! You are in <strong>View Only</strong> mode — enjoy watching the Champions journey! 🏆</span>';
   var app = document.querySelector('.app');
-  if(app) app.insertBefore(banner, app.children[1]); // After header
+  if(app) app.insertBefore(banner, app.children[1]); 
 }
 
-// ══ BACKGROUND THEMES ══
 var BG_THEMES = [
   {id:'default',   name:'Purple Dream',  bg:'linear-gradient(135deg,#6d28d9,#4f46e5,#7c3aed)', header:'var(--purple)'},
   {id:'blue',      name:'Ocean Blue',    bg:'linear-gradient(135deg,#1e40af,#0ea5e9,#38bdf8)',  header:'#1e40af'},
@@ -1193,7 +1253,7 @@ function showUserMenu(){
   var m=document.createElement('div');
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:16px;overflow-y:auto';
   m.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;animation:pop .2s ease;margin-top:auto">'+
-    // Profile header
+    
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f3f4f6">'+
       '<div style="position:relative;cursor:pointer" id="avatar-wrap" title="Tap to change photo">'+
         avatarContent+
@@ -1205,22 +1265,22 @@ function showUserMenu(){
         '<div style="font-size:11px;color:#9ca3af">'+(currentUser&&currentUser.email||'')+'</div>'+
       '</div>'+
     '</div>'+
-    // Background theme picker
+    
     '<div style="margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:800;color:#374151;margin-bottom:8px">🎨 My Background Theme</div>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="theme-grid">'+themeGrid+'</div>'+
     '</div>'+
-    // Action buttons
+    
     '<button id="btn-change-photo" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;text-align:left">📷 Change Profile Photo</button>'+
     '<button id="btn-set-dob" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fef3c7;color:#92400e;cursor:pointer;margin-bottom:8px;text-align:left">🎂 Set Birthday Date '+(p.dob?'('+new Date(p.dob).toLocaleDateString('en-IN',{day:'numeric',month:'long'})+'✅)':'')+'</button>'+
     '<button id="btn-reset-pw" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#dbeafe;color:#1d4ed8;cursor:pointer;margin-bottom:8px;text-align:left">🔑 Change Password</button>'+
     '<button id="btn-sign-out" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:pointer;margin-bottom:8px;text-align:left">🚪 Sign Out</button>'+
     '<button id="btn-close-menu" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#f3f4f6;color:#374151;cursor:pointer;text-align:left">✕ Close</button>'+
-    // Hidden file input for photo
+    
     '<input type="file" id="avatar-file-input" accept="image/*" style="display:none">'+
   '</div>';
 
-  // Photo upload handler
+  
   function triggerPhotoUpload(){
     m.querySelector('#avatar-file-input').click();
   }
@@ -1244,10 +1304,10 @@ function showUserMenu(){
       var photoURL = ev.target.result;
       currentUserProfile.photoURL = photoURL;
       db.collection('users').doc(currentUser.uid).update({photoURL: photoURL}).then(function(){
-        // Update avatar in menu
+        
         var wrap = m.querySelector('#avatar-wrap');
         if(wrap) wrap.innerHTML = '<img src="'+photoURL+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover"><div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">📷</div>';
-        // Update pill
+        
         document.getElementById('user-pill').innerHTML = '<img src="'+photoURL+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:3px"> '+(p.name||'Me')+' ▾';
         showToast('Photo updated! 📷');
       });
@@ -1278,7 +1338,7 @@ function renderUsersList(){
       var avatarHtml = u.photoURL
         ? '<img src="'+u.photoURL+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">'
         : '<div style="width:36px;height:36px;border-radius:50%;background:'+rc[0]+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(u.avatar||'👤')+'</div>';
-      // Show saved password hint if stored
+      
       var pwHint = u.savedPassword ? '<div style="font-size:10px;color:#059669;font-weight:700">🔑 Password saved</div>' : '<div style="font-size:10px;color:#9ca3af">No password saved</div>';
       html+='<div class="user-list-item" style="flex-wrap:wrap;gap:6px">'+
         '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'+
@@ -1329,7 +1389,6 @@ function createUser(){
 
 function deleteUser(uid){if(!confirm('Remove this user?'))return;db.collection('users').doc(uid).delete().then(function(){showToast('User removed!');renderUsersList();});}
 
-// ══ PASSWORD MANAGER ══
 var pwManagerUid = null;
 var pwManagerEmail = null;
 var pwVisible = false;
@@ -1345,7 +1404,7 @@ function openPasswordManager(uid, name, email){
   document.getElementById('pw-success').style.display='none';
   document.getElementById('pw-saved-display').textContent='••••••';
   document.getElementById('pw-toggle-btn').textContent='👁 Show';
-  // Check if password is saved in Firestore
+  
   db.collection('users').doc(uid).get().then(function(doc){
     var savedPw = doc.exists&&doc.data().savedPassword?doc.data().savedPassword:'';
     if(savedPw){
@@ -1387,16 +1446,16 @@ function saveNewPassword(){
   if(newPw.length<6){errEl.textContent='Password must be at least 6 characters';errEl.style.display='block';return;}
   if(newPw!==confirmPw){errEl.textContent='Passwords do not match!';errEl.style.display='block';return;}
 
-  // Step 1: Save password hint to Firestore (for Papa to view)
+  
   db.collection('users').doc(pwManagerUid).update({savedPassword: newPw}).then(function(){
-    // Step 2: Update actual Firebase Auth password using secondary app
+    
     var secondary;
     try{secondary=firebase.app('secondary2');}catch(e){secondary=firebase.initializeApp(firebaseConfig,'secondary2');}
-    // Sign in as that user to change their password
+    
     return secondary.auth().signInWithEmailAndPassword(pwManagerEmail, newPw).then(function(cred){
       return cred.user.updatePassword(newPw);
     }).catch(function(){
-      // If can't sign in (old password unknown), that's ok - password is still saved in Firestore
+      
       return Promise.resolve();
     }).finally(function(){
       try{secondary.auth().signOut();}catch(e){}
@@ -1404,7 +1463,7 @@ function saveNewPassword(){
   }).then(function(){
     sucEl.textContent='✅ Password saved successfully! Papa can view it anytime from this screen.';
     sucEl.style.display='block';
-    // Update display
+    
     document.getElementById('pw-saved-section').style.display='block';
     document.getElementById('pw-not-saved-section').style.display='none';
     document.getElementById('pw-saved-display').setAttribute('data-pw', newPw);
@@ -1419,7 +1478,6 @@ function saveNewPassword(){
   });
 }
 
-// ══ STATE ══
 var lang='en',mode='vacation',selectedKid='dhruv';
 var selectedDay=new Date().getDay();if(selectedDay===0)selectedDay=7;
 var weekOffset=0,reportWeekOffset=0;
@@ -1427,7 +1485,6 @@ var today=new Date().getDay();if(today===0)today=7;
 var DAYS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var DAYS_HI=['सोम','मंगल','बुध','गुरु','शुक्र','शनि','रवि'];
 
-// ══ HELPERS ══
 function dayKey(kid,day,wOff){var off=(wOff!==undefined)?wOff:weekOffset;var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-day)+(off*7));return kid+'_'+mode+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function getWeekStartLabel(off){var d=new Date();var cd=d.getDay();if(cd===0)cd=7;d.setDate(d.getDate()-(cd-1)+(off*7));var e=new Date(d);e.setDate(d.getDate()+6);var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' – '+e.getDate()+' '+m[e.getMonth()];}
 function getChecks(kid,day,wOff){return(data&&data.checks&&data.checks[kid])?data.checks[kid][dayKey(kid,day,wOff)]||{}:{};}
@@ -1451,7 +1508,7 @@ function getSaved(kid,wOff){return Math.max(0,getWeekEarned(kid,wOff)-getSpent(k
 function getGoalPct(kid){if(!data)return 0;var g=data.goals[kid];if(!g||!g.target)return 0;return Math.min(100,Math.round(getSaved(kid)/g.target*100));}
 function parseTime(timeStr){
   if(!timeStr||timeStr.toLowerCase()==='all day'||timeStr.toLowerCase()==='evening') return 9999;
-  // Extract first time e.g. "6:30 AM – 7:00 AM" → "6:30 AM"
+  
   var first = timeStr.split('–')[0].trim();
   var match = first.match(/(\d+):(\d+)\s*(AM|PM)/i);
   if(!match) return 9999;
@@ -1465,14 +1522,13 @@ function parseTime(timeStr){
 
 function getTasks(){
   var tasks=((data&&data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===selectedKid;});
-  // Sort by time slot
+  
   return tasks.sort(function(a,b){return parseTime(a.time)-parseTime(b.time);});
 }
 function showCoin(a){var c=document.createElement('div');c.className='coin-pop';c.textContent='+₹'+a+'💰';c.style.left=(window.innerWidth/2-30)+'px';c.style.top=(window.innerHeight/2)+'px';document.body.appendChild(c);setTimeout(function(){c.remove();},700);}
 function showToast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
 
-// ══ RENDER ══
 function render(){
   if(!data||!document.getElementById('screen-app').classList.contains('active'))return;
   renderKidCards();renderDays();renderTasks();renderGoal();renderSummary();renderLevel();renderBadges();
@@ -1543,7 +1599,7 @@ function renderTasks(){
   var isViewer=currentUserProfile&&currentUserProfile.role==='viewer';
   var locked=isDayLocked(selectedKid,selectedDay,weekOffset);
 
-  // Update lock button
+  
   var lockBtn=document.getElementById('lock-day-btn');
   if(lockBtn){
     lockBtn.style.display=isParent&&!isFuture?'block':'none';
@@ -1553,7 +1609,7 @@ function renderTasks(){
 
   if(tasks.length===0){list.innerHTML='<div style="text-align:center;padding:14px;font-size:12px;color:var(--gray)">No tasks yet. Tap + Add!</div>';return;}
 
-  // Show locked banner
+  
   var lockedBanner = locked
     ? '<div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px">🔒 <strong>Day is locked!</strong> '+(isAdmin?'Tap "🔓 Unlock Day" to make changes.':'Only Papa can unlock this day.')+'</div>'
     : '';
@@ -1604,7 +1660,6 @@ function renderSummary(){
   document.getElementById('summary-body').innerHTML=rows.map(function(r){return '<div class="summary-row"><span>'+r[0]+'</span><span style="font-weight:700;color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
 }
 
-// ══ LEVELS ══
 var LEVELS=[{name:'Beginner',nameHi:'शुरुआती',min:0,icon:'🌱',color:'#6b7280'},{name:'Rising Star',nameHi:'उभरता सितारा',min:200,icon:'⭐',color:'#f59e0b'},{name:'Champion',nameHi:'चैंपियन',min:500,icon:'🏆',color:'#3b82f6'},{name:'Legend',nameHi:'किंवदंती',min:1000,icon:'🌟',color:'#7c3aed'}];
 function getAllTimeEarned(kid){if(!data)return 0;var tot=0;Object.keys(data.checks[kid]||{}).forEach(function(key){var ch=data.checks[kid][key];var all=[].concat(data.tasks.vacation||[]).concat(data.tasks.school||[]);all.forEach(function(t){if(ch[t.id])tot+=t.amount;});});(data.bonuses&&data.bonuses[kid]||[]).forEach(function(b){tot+=b.amount;});return tot;}
 function getLevel(kid){var tot=getAllTimeEarned(kid);for(var i=LEVELS.length-1;i>=0;i--){if(tot>=LEVELS[i].min)return{level:LEVELS[i],total:tot,idx:i};}return{level:LEVELS[0],total:tot,idx:0};}
@@ -1656,7 +1711,6 @@ function renderBadges(){
   el.innerHTML=badges.length===0?'<div style="font-size:12px;color:var(--gray);padding:4px">Complete tasks to earn badges!</div>':badges.map(function(b){return '<span class="badge" style="background:'+b.c+';color:'+b.t+'">'+b.e+' '+b.l+'</span>';}).join('');
 }
 
-// ══ CELEBRATION ══
 var lastCount={};
 function checkCelebration(kid){
   var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
@@ -1673,10 +1727,9 @@ function showCelebration(kid){
   document.body.appendChild(msg);setTimeout(function(){msg.remove();},2800);
 }
 
-// ══ TABS / MODE / LANG ══
 var currentTab='home';
 function switchTab(tab){
-  // Stop kids zone timer if leaving kids tab
+  
   if(currentTab==='kids' && tab!=='kids') stopKzTimer();
   currentTab=tab;
   ['home','quiz','kids','photos','report','admin'].forEach(function(t){
@@ -1696,25 +1749,20 @@ function selectDay(day){selectedDay=day;render();}
 function changeWeek(dir){if(weekOffset+dir>0)return;weekOffset+=dir;selectedDay=weekOffset<0?7:today;render();}
 function changeReportWeek(dir){if(reportWeekOffset+dir>0)return;reportWeekOffset+=dir;var lbl=document.getElementById('report-week-label');lbl.textContent=reportWeekOffset===0?'This week':reportWeekOffset===-1?'Last week':getWeekStartLabel(reportWeekOffset);var nb=document.getElementById('report-next-btn');if(nb)nb.style.opacity=reportWeekOffset>=0?'.3':'1';renderReport();}
 
-// ══ TASKS CRUD ══
 function openAddTask(){document.getElementById('edit-task-id').value='';['task-name-en','task-name-hi','task-amount','task-time'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('task-kid').value='both';document.getElementById('modal-task-title').textContent='➕ Add New Task';document.getElementById('save-task-btn').textContent='Save Task';document.getElementById('modal-task').classList.remove('hidden');}
 function openEditTask(id){var t=((data.tasks&&data.tasks[mode])||[]).find(function(x){return x.id===id;});if(!t)return;document.getElementById('edit-task-id').value=id;document.getElementById('task-name-en').value=t.en||'';document.getElementById('task-name-hi').value=t.hi||'';document.getElementById('task-amount').value=t.amount||0;document.getElementById('task-kid').value=t.kid||'both';document.getElementById('task-time').value=t.time||'';document.getElementById('modal-task-title').textContent='✏️ Edit Task';document.getElementById('save-task-btn').textContent='Update Task';document.getElementById('modal-task').classList.remove('hidden');}
 function deleteTask(id){if(!confirm('Delete this task?'))return;data.tasks[mode]=(data.tasks[mode]||[]).filter(function(t){return t.id!==id;});saveData();render();showToast('Task deleted! 🗑️');}
 function saveTask(){var en=document.getElementById('task-name-en').value.trim(),hi=document.getElementById('task-name-hi').value.trim(),amount=parseInt(document.getElementById('task-amount').value)||0,kid=document.getElementById('task-kid').value,time=document.getElementById('task-time').value,editId=document.getElementById('edit-task-id').value;if(!en){showToast('Enter task name!');return;}if(!data.tasks[mode])data.tasks[mode]=[];if(editId){var idx=data.tasks[mode].findIndex(function(t){return t.id===editId;});if(idx>-1)data.tasks[mode][idx]={id:editId,en:en,hi:hi||en,amount:amount,kid:kid,time:time};showToast('Updated! ✅');}else{data.tasks[mode].push({id:'c'+Date.now(),en:en,hi:hi||en,amount:amount,kid:kid,time:time});showToast('Added! ✅');}saveData();closeModal('modal-task');render();}
 
-// ══ GOAL ══
 function openGoalModal(){if(!data)return;var g=data.goals[selectedKid];document.getElementById('goal-name').value=g&&g.name?g.name:'';document.getElementById('goal-amount').value=g&&g.target?g.target:'';document.getElementById('modal-goal').classList.remove('hidden');}
 function saveGoal(){var name=document.getElementById('goal-name').value.trim(),amount=parseInt(document.getElementById('goal-amount').value)||0;if(!name||!amount){showToast('Fill all fields!');return;}data.goals[selectedKid]={name:name,target:amount};saveData();closeModal('modal-goal');render();showToast('Goal set! 🎯');}
 
-// ══ SPEND ══
 function openSpendModal(){if(!data)return;var earned=getWeekEarned(selectedKid),spent=getSpent(selectedKid),saved=getSaved(selectedKid);document.getElementById('spend-kid-lbl').textContent='How much did '+(selectedKid==='dhruv'?'Dhruv':'Vedika')+' spend?';document.getElementById('spend-amount').value=spent>0?spent:'';document.getElementById('spend-note').value=data['spend_note_'+selectedKid]||'';document.getElementById('spend-info').textContent='Earned: ₹'+earned+' · Saved: ₹'+saved;document.getElementById('modal-spend').classList.remove('hidden');}
 function saveSpend(){var amount=parseInt(document.getElementById('spend-amount').value)||0,note=document.getElementById('spend-note').value.trim();if(weekOffset===0)data.spent[selectedKid]=amount;else data['spent_'+selectedKid+'_'+weekOffset]=amount;if(note)data['spend_note_'+selectedKid]=note;saveData();closeModal('modal-spend');render();showToast('Recorded! 💸');}
 
-// ══ BONUS ══
 function openBonusModal(){if(!data)return;document.getElementById('bonus-kid-lbl').textContent='Give bonus to '+(selectedKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼');document.getElementById('bonus-amount').value='';document.getElementById('bonus-reason').value='';document.getElementById('modal-bonus').classList.remove('hidden');}
 function saveBonus(){var amount=parseInt(document.getElementById('bonus-amount').value)||0,reason=document.getElementById('bonus-reason').value.trim();if(!amount){showToast('Enter amount!');return;}if(!data.bonuses)data.bonuses={dhruv:[],vedika:[]};if(!data.bonuses[selectedKid])data.bonuses[selectedKid]=[];data.bonuses[selectedKid].push({amount:amount,reason:reason||'Bonus',date:new Date().toLocaleDateString('en-IN')});saveData();closeModal('modal-bonus');render();showToast('🎁 Bonus ₹'+amount+' given!');showCelebration(selectedKid);}
 
-// ══ FOLDERS & FILES ══
 var photoKid='dhruv',currentFolder='memories';
 var DFLT=[{id:'memories',name:'Daily Memories',icon:'📸',locked:true},{id:'school',name:'School Records',icon:'🎓',locked:true},{id:'awards',name:'Awards & Certs',icon:'🏆',locked:true},{id:'health',name:'Health Docs',icon:'🏥',locked:true},{id:'artwork',name:'Art & Creativity',icon:'🎨',locked:true}];
 var FICONS=['📸','📄','🎓','🏆','🎨','⚽','🏥','📝','🌟','🎵','🧪','📚','🎭','🧸','🌈','✈️'];
@@ -1731,18 +1779,12 @@ function selIcon(el,icon){document.getElementById('icon-picker').querySelectorAl
 function saveNewFolder(){var name=document.getElementById('folder-name-input').value.trim(),icon=document.getElementById('folder-icon-selected').value||'📁';if(!name){showToast('Enter folder name!');return;}initFolders();var id='cf'+Date.now();data.folders[photoKid][id]={id:id,name:name,icon:icon,locked:false};data.files[photoKid][id]=[];saveData();currentFolder=id;closeModal('modal-folder');renderFolderView();showToast('Folder created! 📁');}
 function deleteCurrentFolder(){var folder=data.folders[photoKid][currentFolder];if(!folder||folder.locked){showToast('Cannot delete default folders!');return;}if(!confirm('Delete folder and all files?'))return;delete data.folders[photoKid][currentFolder];delete data.files[photoKid][currentFolder];saveData();currentFolder='memories';renderFolderView();showToast('Deleted! 🗑️');}
 
-// ══ TEACH-E ══
 var teachETxt='';
 function teachESpeak(key){var dE=getWeekEarned('dhruv',reportWeekOffset),vE=getWeekEarned('vedika',reportWeekOffset),dS=getSaved('dhruv',reportWeekOffset),vS=getSaved('vedika',reportWeekOffset);var texts={dhruv:'Dhruv champion! This week you earned ₹'+dE+' and saved ₹'+dS+'! '+(dE>80?'Amazing!':'Keep pushing!')+((!data.goals.dhruv||!data.goals.dhruv.target)?' Set a savings goal today!':' Keep working toward '+data.goals.dhruv.name+'! Roar!'),vedika:'Vedika superstar! You earned ₹'+vE+' and saved ₹'+vS+'! '+(vE>80?'Incredible!':'Even better next week!')+((!data.goals.vedika||!data.goals.vedika.target)?' Set a savings goal!':' Your goal '+data.goals.vedika.name+' is getting closer! Shine on!'),goal:'Setting a savings goal is the most powerful habit! Every rupee has a purpose. It teaches patience, maths, and discipline. The happiness of buying something with your own money is ten times better than a gift! Set your goal today!'};teachETxt=texts[key];document.getElementById('teachE-text').textContent=teachETxt.substring(0,200)+'...';document.getElementById('teachE-speak-btn').style.display='block';}
 function speakCurrent(){if(!window.speechSynthesis||!teachETxt)return;window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(teachETxt);u.rate=1.0;u.pitch=1.4;u.volume=1;var vv=window.speechSynthesis.getVoices();for(var i=0;i<vv.length;i++){if(/female|samantha|karen|victoria|moira|tessa/i.test(vv[i].name)&&vv[i].lang.indexOf('en')===0){u.voice=vv[i];break;}}window.speechSynthesis.speak(u);}
 
-// ══ REPORT ══
-// ══════════════════════════════════════
-// SMART BEHAVIOUR ANALYSIS
-// ══════════════════════════════════════
-
 function collectKidData(kid){
-  // Collect last 4 weeks of data for deep analysis
+  
   var allTasks = (data.tasks[mode]||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
   var taskStats = {};
   allTasks.forEach(function(t){
@@ -1765,7 +1807,7 @@ function collectKidData(kid){
         var done = !!ch[t.id];
         if(done){ taskStats[t.en].done++; dayEarned+=t.amount; }
         else taskStats[t.en].missed++;
-        // Time of day analysis
+        
         var tStr = (t.time||'').toLowerCase();
         if(tStr.indexOf('6:')==0||tStr.indexOf('7:')==0||tStr.indexOf('8:')==0||tStr.indexOf('9:')==0){
           morningTotal++; if(done) morningDone++;
@@ -1776,7 +1818,7 @@ function collectKidData(kid){
         }
       });
       weekTotal+=dayEarned;
-      // Track best/worst day
+      
       var dayName=DAYS_FULL[d-1];
       if(!dayTotals[dayName]) dayTotals[dayName]={earned:0,count:0};
       dayTotals[dayName].earned+=dayEarned;
@@ -1785,7 +1827,7 @@ function collectKidData(kid){
     weeklyScores.push(weekTotal);
   }
 
-  // Sort tasks by completion rate
+  
   var taskList = Object.keys(taskStats).map(function(name){
     var s=taskStats[name]; var total=s.done+s.missed;
     return {name:name, rate:total>0?Math.round(s.done/total*100):0, done:s.done, missed:s.missed, amount:s.amount, time:s.time};
@@ -1794,17 +1836,17 @@ function collectKidData(kid){
   var topTasks = taskList.slice(0,5);
   var bottomTasks = taskList.slice(-5).reverse();
 
-  // Best and worst days
+  
   var dayAvg = Object.keys(dayTotals).map(function(day){
     return {day:day, avg:dayTotals[day].count>0?Math.round(dayTotals[day].earned/dayTotals[day].count):0};
   });
   dayAvg.sort(function(a,b){return b.avg-a.avg;});
 
-  // Quiz data
+  
   var quizAvg = 0;
-  // Bonuses
+  
   var bonuses = (data.bonuses&&data.bonuses[kid])||[];
-  // Streak
+  
   var streak = getStreak(kid);
   var level = getLevel(kid);
   var weekAvg = weeklyScores.length>0?Math.round(weeklyScores.reduce(function(a,b){return a+b;},0)/weeklyScores.length):0;
@@ -1833,7 +1875,7 @@ function generateBehaviourReport(kid){
   var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
   if(!isParent){showToast('This report is for parents only!');return;}
 
-  // Show loading
+  
   document.getElementById('behaviour-placeholder').style.display='none';
   document.getElementById('behaviour-report').style.display='none';
   document.getElementById('behaviour-loading').style.display='block';
@@ -1841,11 +1883,11 @@ function generateBehaviourReport(kid){
   bar.style.width='0%';
   setTimeout(function(){bar.style.width='70%';},100);
 
-  // Collect data
+  
   var kd = collectKidData(kid);
   var name = kd.name, emoji = kd.emoji;
 
-  // Build AI prompt with real data
+  
   var prompt = 'You are a child behaviour and parenting expert AI. Analyze this data about '+name+' (age '+(kid==='dhruv'?'8-10':'12-14')+') and generate a detailed, warm, actionable parenting report.\n\n'+
     'DATA:\n'+
     '- Weekly earnings last 4 weeks: ₹'+kd.weeklyScores.join(', ₹')+' (avg: ₹'+kd.weekAvg+'/week)\n'+
@@ -1893,7 +1935,7 @@ function generateBehaviourReport(kid){
 function renderBehaviourReport(kd, r){
   var color = kd.kid==='dhruv'?'#3b82f6':'#ec4899';
   var html =
-    // Header
+    
     '<div style="background:rgba(255,255,255,.1);border-radius:12px;padding:14px;margin-bottom:10px">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
         '<div style="font-size:32px">'+kd.emoji+'</div>'+
@@ -1903,7 +1945,7 @@ function renderBehaviourReport(kd, r){
       '<div style="font-size:12px;color:rgba(255,255,255,.9);line-height:1.7">'+r.summary+'</div>'+
     '</div>'+
 
-    // Strength & Challenge
+    
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
       '<div style="background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.4);border-radius:10px;padding:10px">'+
         '<div style="font-size:10px;font-weight:800;color:#6ee7b7;margin-bottom:4px">💪 KEY STRENGTH</div>'+
@@ -1915,7 +1957,7 @@ function renderBehaviourReport(kd, r){
       '</div>'+
     '</div>'+
 
-    // Time of day analysis
+    
     '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px">'+
       '<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">⏰ Time of Day Performance</div>'+
       ['morning','afternoon','evening'].map(function(period){
@@ -1936,7 +1978,7 @@ function renderBehaviourReport(kd, r){
       }).join('')+
     '</div>'+
 
-    // Loved tasks
+    
     '<div style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px;margin-bottom:10px">'+
       '<div style="font-size:11px;font-weight:800;color:#6ee7b7;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">❤️ Tasks '+kd.name+' Loves</div>'+
       (r.lovedTasks||[]).map(function(t){
@@ -1948,7 +1990,7 @@ function renderBehaviourReport(kd, r){
       }).join('')+
     '</div>'+
 
-    // Tasks needing push
+    
     '<div style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px;margin-bottom:10px">'+
       '<div style="font-size:11px;font-weight:800;color:#fca5a5;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">💡 Tasks Needing a Push</div>'+
       (r.pushTasks||[]).map(function(t){
@@ -1959,7 +2001,7 @@ function renderBehaviourReport(kd, r){
       }).join('')+
     '</div>'+
 
-    // Best days
+    
     '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:10px">'+
       '<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📅 Best Days</div>'+
       (r.bestDays||[]).map(function(d){
@@ -1971,7 +2013,7 @@ function renderBehaviourReport(kd, r){
       }).join('')+
     '</div>'+
 
-    // Action plan for parents
+    
     '<div style="background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(79,70,229,.4));border:1px solid rgba(167,139,250,.4);border-radius:10px;padding:12px;margin-bottom:10px">'+
       '<div style="font-size:11px;font-weight:800;color:#c4b5fd;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">👨‍👩‍ Action Plan for Parents</div>'+
       (r.actionPlan||[]).map(function(action,i){
@@ -1982,7 +2024,7 @@ function renderBehaviourReport(kd, r){
       }).join('')+
     '</div>'+
 
-    // Encouragement message
+    
     '<div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.2)">'+
       '<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.7);margin-bottom:5px">💬 MESSAGE TO READ TO '+kd.name.toUpperCase()+'</div>'+
       '<div style="font-size:13px;font-style:italic;color:#fff;line-height:1.7">"'+r.encouragement+'"</div>'+
@@ -1995,7 +2037,7 @@ function renderBehaviourReport(kd, r){
 }
 
 function renderBehaviourFallback(kd){
-  // If AI fails, generate a data-driven report without AI
+  
   var color = kd.kid==='dhruv'?'#3b82f6':'#ec4899';
   var bestTime = kd.morningRate>=kd.afternoonRate&&kd.morningRate>=kd.eveningRate?'Morning':
                  kd.afternoonRate>=kd.eveningRate?'Afternoon':'Evening';
@@ -2054,9 +2096,8 @@ function speakBehaviourMessage(text){
   window.speechSynthesis.speak(u);
 }
 
-// Show behaviour section only for parents/admin in renderReport
 function renderReport(){
-  // Show/hide behaviour section based on role
+  
   var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
   var bs = document.getElementById('behaviour-section');
   if(bs) bs.style.display = isParent?'block':'none';
@@ -2089,10 +2130,7 @@ function renderReport(){
   document.getElementById('report-content').innerHTML='<div class="rpt-page" id="rpt-p1"><div class="rpt-cover"><div style="font-size:32px;margin-bottom:6px">🏆</div><h2>Journey of Champions</h2><p>Dhruv & Vedika · '+modeLabel+'</p><div class="week-badge">'+weekLabel+'</div></div><div class="rpt-summary-grid">'+col(dh)+col(ve)+'</div><div class="rpt-footer">Generated by Journey of Champions · '+now.toLocaleDateString('en-IN')+'</div></div>'+detailPage(dh,'rpt-p2')+detailPage(ve,'rpt-p3');
 }
 
-// ══════════════════════════════════════
-// DAILY ACTIVITY REPORT
-// ══════════════════════════════════════
-var dailyActivityOffset = 0; // 0 = today, -1 = yesterday etc.
+var dailyActivityOffset = 0; 
 
 function getActivityDateKey(offset){
   var d = new Date();
@@ -2139,12 +2177,12 @@ function loadDailyActivity(dir){
   var body = document.getElementById('daily-activity-body');
   body.innerHTML='<div style="text-align:center;padding:16px;color:#9ca3af;font-size:12px">⏳ Loading...</div>';
 
-  // Fetch quiz data for BOTH kids + Mummy for this date
+  
   var promises = [];
   var quizData = {};
   var kzData = {};
 
-  // Get all users to fetch their quiz results
+  
   db.collection('users').get().then(function(usersSnap){
     var users = [];
     usersSnap.forEach(function(doc){
@@ -2153,14 +2191,14 @@ function loadDailyActivity(dir){
       users.push(u);
     });
 
-    // Fetch quiz results for each user
+    
     var quizPromises = users.map(function(u){
       return db.collection('quiz').doc(u.uid+'_'+dateKey).get().then(function(doc){
         if(doc.exists) quizData[u.uid] = Object.assign({}, doc.data(), {userName: u.name, avatar: u.avatar||'👤', role: u.role});
       }).catch(function(){});
     });
 
-    // Fetch kids zone data for each kid
+    
     var kzPromises = users.filter(function(u){return u.linkedKid;}).map(function(u){
       return db.collection('kidszone').doc(u.uid+'_'+dateKey).get().then(function(doc){
         if(doc.exists) kzData[u.uid] = Object.assign({}, doc.data(), {userName: u.name, linkedKid: u.linkedKid});
@@ -2179,7 +2217,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
   var body = document.getElementById('daily-activity-body');
   var html = '';
 
-  // ── QUIZ SECTION ──
+  
   var quizUsers = Object.values(quizData);
   html += '<div style="margin-bottom:16px">';
   html += '<div style="font-size:12px;font-weight:800;color:#0f766e;margin-bottom:10px;display:flex;align-items:center;gap:6px">'+
@@ -2192,9 +2230,9 @@ function renderDailyActivity(dateKey, quizData, kzData){
     quizUsers.forEach(function(q){
       var scoreColor = q.score>=4?'#059669':q.score>=2?'#f59e0b':'#ef4444';
       var scoreBg = q.score>=4?'#d1fae5':q.score>=2?'#fef3c7':'#fee2e2';
-      // Questions answered correctly
+      
       var correctQ = [];
-      // We don't store individual answers but we know score
+      
       html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #e5e7eb">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
       html += '<div style="display:flex;align-items:center;gap:8px">';
@@ -2207,7 +2245,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
       html += '<div style="font-size:10px;color:#9ca3af;margin-top:2px">₹'+q.score+' earned</div>';
       html += '</div></div>';
 
-      // Time played
+      
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">';
       html += '<div style="background:#fff;border-radius:7px;padding:7px;border:1px solid #e5e7eb;text-align:center">';
       html += '<div style="font-size:10px;color:#9ca3af;margin-bottom:2px">⏰ Quiz Time (IST)</div>';
@@ -2218,14 +2256,14 @@ function renderDailyActivity(dateKey, quizData, kzData){
       html += '<div style="font-size:12px;font-weight:800;color:#7c3aed">'+q.coinsWon+' coins</div>';
       html += '</div></div>';
 
-      // Score visual
+      
       html += '<div style="display:flex;gap:4px;margin-bottom:10px">';
       for(var i=0;i<5;i++){
         html += '<div style="flex:1;height:6px;border-radius:50px;background:'+(i<q.score?scoreColor:'#e5e7eb')+'"></div>';
       }
       html += '</div>';
 
-      // Detailed Q&A breakdown — only for kids
+      
       if(q.role==='child' && q.answers && q.answers.length>0){
         html += '<div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">📝 Question by Question Breakdown</div>';
         q.answers.forEach(function(a, qi){
@@ -2239,7 +2277,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
           html += '<div style="font-size:11px;font-weight:800;color:#374151">Q'+(qi+1)+'. '+a.q+'</div>';
           html += '<span style="font-size:14px;flex-shrink:0;margin-left:6px">'+icon+'</span>';
           html += '</div>';
-          // Options
+          
           html += '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px">';
           a.options.forEach(function(opt, oi){
             var isCorrectOpt = oi===a.correctAnswer;
@@ -2254,7 +2292,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
             html += '</div>';
           });
           html += '</div>';
-          // Time info
+          
           html += '<div style="font-size:10px;color:#6b7280">';
           if(isTimeout) html += '⏰ Time ran out';
           else html += '⏱️ Answered in '+a.timeTaken+'s';
@@ -2262,7 +2300,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
           html += '</div>';
         });
       } else if(q.role!=='child'){
-        // Parents/Admin — quiz is for fun only, no Q&A stored
+        
         html += '<div style="background:#f0fdf4;border-radius:8px;padding:10px;font-size:12px;color:#065f46;text-align:center">';
         html += '<div style="font-size:16px;margin-bottom:4px">😊</div>';
         html += '<strong>Quiz played for fun!</strong><br>';
@@ -2270,7 +2308,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
         html += '<span style="font-size:10px;color:#9ca3af">Detailed Q&A saved only for kids</span>';
         html += '</div>';
       } else {
-        // Old kid records without detailed answers — show topic-based summary
+        
         var ageGroup = q.userName&&q.userName.toLowerCase().indexOf('dhruv')>-1?'dhruv':'vedika';
         var topics = ageGroup==='dhruv'?
           ['Basic Maths','General Knowledge','Animals & Nature','India Facts','Science Basics']:
@@ -2289,12 +2327,12 @@ function renderDailyActivity(dateKey, quizData, kzData){
         html += '<div style="font-size:10px;color:#9ca3af;margin-top:5px">💡 Full Q&A breakdown available from next quiz</div>';
       }
 
-      html += '</div>'; // end user quiz card
+      html += '</div>'; 
     });
   }
-  html += '</div>'; // end quiz section
+  html += '</div>'; 
 
-  // ── KIDS ZONE SECTION ──
+  
   html += '<div style="margin-bottom:8px">';
   html += '<div style="font-size:12px;font-weight:800;color:#0f766e;margin-bottom:10px;display:flex;align-items:center;gap:6px">'+
     '<div style="width:28px;height:28px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:14px">🎮</div>'+
@@ -2304,7 +2342,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
   if(kzUsers.length === 0){
     html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;font-size:12px;color:#9ca3af;text-align:center">Kids Zone not used on this day</div>';
   } else {
-    // Show combined summary (both kids get same time)
+    
     var kzSample = kzUsers[0];
     var totalSecs = kzSample.secondsUsed||0;
     var coinsEarned = kzSample.coinsEarned||0;
@@ -2318,13 +2356,13 @@ function renderDailyActivity(dateKey, quizData, kzData){
     html += '<div style="font-size:10px;color:#9ca3af">of 60 min limit</div></div>';
     html += '</div>';
 
-    // Time bar
+    
     html += '<div style="background:#e5e7eb;border-radius:50px;height:8px;overflow:hidden;margin-bottom:6px">';
     html += '<div style="height:8px;border-radius:50px;background:'+(pctUsed>=80?'#ef4444':pctUsed>=50?'#f59e0b':'#059669')+';width:'+Math.min(100,pctUsed)+'%"></div>';
     html += '</div>';
     html += '<div style="font-size:10px;color:#6b7280;margin-bottom:10px">'+pctUsed+'% of daily limit used</div>';
 
-    // Stats grid
+    
     html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">';
     html += '<div style="background:#fff;border-radius:8px;padding:8px;text-align:center;border:1px solid #e5e7eb">';
     html += '<div style="font-size:16px">⏱️</div><div style="font-size:12px;font-weight:800;color:#0f766e">'+formatMins(totalSecs)+'</div>';
@@ -2338,7 +2376,7 @@ function renderDailyActivity(dateKey, quizData, kzData){
     html += '<div style="font-size:9px;color:#9ca3af">Screen Time</div></div>';
     html += '</div>';
 
-    // IST time info
+    
     html += '<div style="background:#fff;border-radius:8px;padding:8px;border:1px solid #e5e7eb;font-size:11px;color:#374151">';
     html += '<div style="display:flex;justify-content:space-between;margin-bottom:3px">';
     html += '<span style="font-weight:700">📅 Activity Date (IST)</span>';
@@ -2350,8 +2388,8 @@ function renderDailyActivity(dateKey, quizData, kzData){
     html += '</div></div>';
     html += '</div>';
 
-    // Game time breakdown
-    // Since we don't store per-game time, show estimated breakdown based on coins
+    
+    
     html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;border:1px solid #e5e7eb">';
     html += '<div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px">🎮 Games Likely Played (based on coins earned)</div>';
 
@@ -2372,9 +2410,9 @@ function renderDailyActivity(dateKey, quizData, kzData){
     });
     html += '</div>';
   }
-  html += '</div>'; // end kz section
+  html += '</div>'; 
 
-  // ── COMBINED SUMMARY ──
+  
   var hasQuiz = quizUsers.length>0;
   var hasKz = kzUsers.length>0;
   if(hasQuiz||hasKz){
@@ -2411,18 +2449,14 @@ function renderDailyActivity(dateKey, quizData, kzData){
 function downloadPDF(){showToast('Preparing PDF...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){ls('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){var pages=['rpt-p1','rpt-p2','rpt-p3'],pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),pW=pdf.internal.pageSize.getWidth(),pH=pdf.internal.pageSize.getHeight(),done=0;function cap(i){var el=document.getElementById(pages[i]);if(!el){done++;if(done===pages.length)pdf.save('JOC_Report.pdf');return;}html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){if(i>0)pdf.addPage();var imgW=pW-16,imgH=(canvas.height*imgW)/canvas.width;pdf.addImage(canvas.toDataURL('image/png'),'PNG',8,8,imgW,Math.min(imgH,pH-16));done++;if(done===pages.length){pdf.save('JOC_Report.pdf');showToast('PDF saved! 📄');}else cap(i+1);});}cap(0);});});}
 function downloadJPG(){showToast('Preparing...');function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}ls('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){['rpt-p1','rpt-p2','rpt-p3'].forEach(function(pid,i){var el=document.getElementById(pid);if(!el)return;html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){var a=document.createElement('a');a.download='JOC_'+['Summary','Dhruv','Vedika'][i]+'.jpg';a.href=canvas.toDataURL('image/jpeg',.95);a.click();});});setTimeout(function(){showToast('3 images saved! 🖼️');},1000);});}
 
-// ══ DEFAULT TASKS ══
 function defVacation(){return [{id:'t1',en:'Wake up on time & freshen up',hi:'समय पर उठो और तैयार हो',amount:5,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'t2',en:'Exercise / park / cycling',hi:'व्यायाम / पार्क / साइकिल',amount:8,kid:'both',time:'7:00 AM – 7:45 AM'},{id:'t3',en:'Help at home — chore done',hi:'घर में मदद करो',amount:10,kid:'both',time:'8:00 AM – 8:30 AM'},{id:'t4',en:'Bath on time',hi:'समय पर नहाओ',amount:5,kid:'both',time:'8:30 AM – 9:00 AM'},{id:'t5',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'9:00 AM – 9:30 AM'},{id:'t6',en:'Learning time completed',hi:'पढ़ाई का समय पूरा',amount:15,kid:'both',time:'10:00 AM – 11:00 AM'},{id:'t7',en:'Creative activity done',hi:'रचनात्मक काम किया',amount:10,kid:'both',time:'11:00 AM – 12:00 PM'},{id:'t8',en:'Lunch on time, helped clear up',hi:'समय पर खाना, साफ करने में मदद',amount:8,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'t9',en:'Rest & approved videos only',hi:'आराम और मान्य वीडियो',amount:5,kid:'both',time:'1:30 PM – 3:00 PM'},{id:'t10',en:'Outdoor activity / sports',hi:'बाहर खेलना / खेल',amount:8,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'t11',en:'Dinner & TV time (approved)',hi:'रात का खाना और टीवी समय',amount:5,kid:'both',time:'7:00 PM – 8:00 PM'},{id:'t12',en:'Special time with Mummy',hi:'मम्मी के साथ खास समय',amount:8,kid:'both',time:'8:00 PM – 8:30 PM'},{id:'t13',en:'Sleep on time without fuss',hi:'बिना नाटक समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'t14',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'t15',en:'Showed kindness without being asked',hi:'बिना कहे दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'t16',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'},{id:'t17',en:'Wrote / drew a thank-you note',hi:'धन्यवाद नोट लिखा / बनाया',amount:8,kid:'both',time:'Evening'}];}
 function defSchool(){return [{id:'s1',en:'Wake up on time',hi:'समय पर उठो',amount:5,kid:'both',time:'6:00 AM – 6:30 AM'},{id:'s2',en:'Get ready without reminder',hi:'बिना याद दिलाए तैयार हो',amount:8,kid:'both',time:'6:30 AM – 7:00 AM'},{id:'s3',en:'Breakfast without TV',hi:'बिना टीवी नाश्ता',amount:8,kid:'both',time:'7:00 AM – 7:30 AM'},{id:'s4',en:'Bag packed & ready',hi:'बैग तैयार',amount:5,kid:'both',time:'7:30 AM – 7:45 AM'},{id:'s5',en:'Ate lunch properly at school',hi:'स्कूल में खाना ठीक से खाया',amount:5,kid:'both',time:'1:00 PM – 1:30 PM'},{id:'s6',en:'No screen time before homework',hi:'होमवर्क से पहले कोई स्क्रीन नहीं',amount:10,kid:'both',time:'4:00 PM – 5:00 PM'},{id:'s7',en:'Homework completed',hi:'होमवर्क पूरा किया',amount:15,kid:'both',time:'4:00 PM – 5:30 PM'},{id:'s8',en:'Reading for 15 minutes',hi:'15 मिनट पढ़ाई',amount:10,kid:'both',time:'5:30 PM – 5:45 PM'},{id:'s9',en:'Help at home after school',hi:'स्कूल के बाद घर में मदद',amount:8,kid:'both',time:'6:00 PM – 6:30 PM'},{id:'s10',en:'Bag packed for tomorrow',hi:'कल के लिए बैग तैयार',amount:5,kid:'both',time:'8:00 PM – 8:15 PM'},{id:'s11',en:'Sleep on time',hi:'समय पर सोओ',amount:8,kid:'both',time:'9:00 PM – 9:30 PM'},{id:'s12',en:'Said please & thank you all day',hi:'दिनभर कृपया और धन्यवाद कहा',amount:5,kid:'both',time:'All day'},{id:'s13',en:'Showed kindness',hi:'दयालुता दिखाई',amount:10,kid:'both',time:'All day'},{id:'s14',en:'No tantrums / no complaining',hi:'कोई नखरे / शिकायत नहीं',amount:10,kid:'both',time:'All day'}];}
 
-// ══════════════════════════════════════
-// QUIZ & COIN WALLET SYSTEM
-// ══════════════════════════════════════
 var quizQuestions = [];
 var quizCurrentIdx = 0;
 var quizScore = 0;
 var quizAnswered = false;
-var quizAnswers = []; // stores {q, options, answer, userAnswer, correct, timeTaken}
+var quizAnswers = []; 
 var quizSpinning = false;
 var spinAnimFrame = null;
 var SPIN_PRIZES = [10, 20, 10, 50, 10, 30, 10, 100, 10, 20];
@@ -2434,9 +2468,9 @@ function getUserAgeGroup(){
   var p = currentUserProfile||{};
   var name = (p.name||'').toLowerCase();
   var linked = p.linkedKid||'';
-  if(linked==='dhruv'||name.indexOf('dhruv')>-1) return 'dhruv'; // 8-10
-  if(linked==='vedika'||name.indexOf('vedika')>-1) return 'vedika'; // 12-14
-  return 'adult'; // Mummy/Papa
+  if(linked==='dhruv'||name.indexOf('dhruv')>-1) return 'dhruv'; 
+  if(linked==='vedika'||name.indexOf('vedika')>-1) return 'vedika'; 
+  return 'adult'; 
 }
 
 function getQuizPrompt(ageGroup){
@@ -2452,18 +2486,18 @@ function getQuizPrompt(ageGroup){
 function initQuizTab(){
   var uid = currentUser&&currentUser.uid;
   if(!uid) return;
-  // Always show start button first by default
+  
   document.getElementById('quiz-already-done').style.display='none';
   document.getElementById('start-quiz-btn').style.display='block';
   document.getElementById('quiz-date-lbl').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
   renderWallet();
   renderQuizHistory();
-  // Show admin panel for admin/parent only
+  
   var isAdmin = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
   var ap = document.getElementById('quiz-admin-panel');
   if(ap) ap.style.display = isAdmin?'block':'none';
   if(isAdmin) renderAllQuizResults();
-  // Check if already done today
+  
   var todayKey = getTodayKey();
   db.collection('quiz').doc(uid+'_'+todayKey).get().then(function(doc){
     if(doc.exists && doc.data().completed){
@@ -2474,7 +2508,7 @@ function initQuizTab(){
       document.getElementById('start-quiz-btn').style.display='block';
     }
   }).catch(function(){
-    // On error always show start button
+    
     document.getElementById('quiz-already-done').style.display='none';
     document.getElementById('start-quiz-btn').style.display='block';
   });
@@ -2506,7 +2540,7 @@ function renderWallet(){
 function renderQuizHistory(){
   var uid = currentUser&&currentUser.uid; if(!uid) return;
   var el = document.getElementById('quiz-history');
-  // Try ordered query first, fall back to simple query if index not ready
+  
   db.collection('quiz').where('uid','==',uid).orderBy('date','desc').limit(7).get().then(function(snap){
     if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz history yet. Start your first quiz! 🧠</div>';return;}
     var html='';
@@ -2521,7 +2555,7 @@ function renderQuizHistory(){
     });
     el.innerHTML=html;
   }).catch(function(){
-    // Fallback - simple query without orderBy (works even without index)
+    
     db.collection('quiz').where('uid','==',uid).limit(7).get().then(function(snap){
       if(snap.empty){el.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:4px">No quiz history yet. Start your first quiz! 🧠</div>';return;}
       var rows=[];
@@ -2564,7 +2598,7 @@ function renderAllQuizResults(){
 
 function startQuiz(){
   var ageGroup = getUserAgeGroup();
-  // Show loading state
+  
   document.getElementById('quiz-state-start').classList.add('hidden');
   document.getElementById('quiz-state-question').classList.remove('hidden');
   document.getElementById('q-text').textContent = '⏳ Preparing your questions...';
@@ -2572,19 +2606,19 @@ function startQuiz(){
   document.getElementById('q-next-btn').style.display='none';
   document.getElementById('q-feedback').style.display='none';
 
-  // Use large question bank with daily rotation based on date
-  // This ensures different questions each day without needing API
+  
+  
   var todayKey = getTodayKey();
   var dateHash = todayKey.split('-').reduce(function(a,b){return parseInt(a)*31+parseInt(b);},0);
   var allQ = getAllQuestions(ageGroup);
-  // Shuffle using date as seed so same questions per day but different each day
+  
   var shuffled = seededShuffle(allQ, dateHash);
   quizQuestions = shuffled.slice(0,5);
   quizCurrentIdx = 0;
   quizScore = 0;
   quizAnswers = [];
 
-  // Try AI first, fall back to question bank if fails
+  
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{
@@ -2606,7 +2640,7 @@ function startQuiz(){
     }
     showQuestion();
   }).catch(function(){
-    // Use question bank (already set above)
+    
     showQuestion();
   });
 }
@@ -2667,7 +2701,7 @@ function getAllQuestions(ageGroup){
     {q:'What does DNA stand for?',options:['Deoxyribonucleic Acid','Deoxyribose Nucleic Atom','Double Nucleic Acid','None of these'],answer:0},
     {q:'Who painted the Mona Lisa?',options:['Picasso','Da Vinci','Rembrandt','Michelangelo'],answer:1}
   ];
-  // Adult questions for Mummy/Papa
+  
   return [
     {q:'What is the currency of Japan?',options:['Yuan','Won','Yen','Peso'],answer:2},
     {q:'Who painted the Mona Lisa?',options:['Picasso','Da Vinci','Rembrandt','Michelangelo'],answer:1},
@@ -2719,11 +2753,11 @@ function updateTimerUI(t){
   if(!circle||!bar) return;
   circle.textContent = t;
   bar.style.width = (t/10*100)+'%';
-  // Color: green→yellow→red
+  
   var color = t>6?'#22c55e':t>3?'#f59e0b':'#ef4444';
   circle.style.background = color;
   bar.style.background    = color;
-  // Pulse when low
+  
   if(t<=3) circle.style.transform='scale(1.15)';
   else circle.style.transform='scale(1)';
 }
@@ -2732,12 +2766,12 @@ function timeUp(){
   if(quizAnswered) return;
   quizAnswered = true;
   var q = quizQuestions[quizCurrentIdx];
-  // Record as time out
+  
   quizAnswers.push({
     q: q.q,
     options: q.options,
     correctAnswer: q.answer,
-    userAnswer: -1, // -1 means timed out
+    userAnswer: -1, 
     correct: false,
     timeTaken: 10
   });
@@ -2775,7 +2809,7 @@ function showQuestion(){
       '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#f3f4f6;text-align:center;line-height:22px;font-size:11px;font-weight:800;margin-right:8px">'+['A','B','C','D'][i]+'</span>'+opt+
     '</button>';
   }).join('');
-  // Start the 10 second timer
+  
   startTimer();
 }
 
@@ -2787,7 +2821,7 @@ function answerQuestion(idx){
   var correct = idx === q.answer;
   var timeTaken = 10 - quizTimeLeft;
   if(correct) quizScore++;
-  // Record this answer
+  
   quizAnswers.push({
     q: q.q,
     options: q.options,
@@ -2854,7 +2888,7 @@ function drawWheel(rotation){
     ctx.strokeStyle='#fff';
     ctx.lineWidth=2;
     ctx.stroke();
-    // Label
+    
     ctx.save();
     ctx.translate(cx,cy);
     ctx.rotate(start+arc/2);
@@ -2864,7 +2898,7 @@ function drawWheel(rotation){
     ctx.fillText('🪙'+prize, r-8, 5);
     ctx.restore();
   });
-  // Center circle
+  
   ctx.beginPath();
   ctx.arc(cx,cy,18,0,2*Math.PI);
   ctx.fillStyle='#fff';
@@ -2880,21 +2914,21 @@ function spinWheel(){
   if(quizSpinning) return;
   quizSpinning=true;
   document.getElementById('spin-btn').style.display='none';
-  // Pick random prize
+  
   var prizeIdx = Math.floor(Math.random()*SPIN_PRIZES.length);
   spinCoins = SPIN_PRIZES[prizeIdx];
-  // Calculate end angle so pointer lands on prize
+  
   var sliceAngle = (2*Math.PI)/SPIN_PRIZES.length;
   var targetAngle = -(prizeIdx * sliceAngle) - sliceAngle/2;
   spinStartAngle = 0;
-  spinEndAngle = targetAngle - (Math.PI*2*8); // 8 full rotations + target
+  spinEndAngle = targetAngle - (Math.PI*2*8); 
   spinDuration = 4000;
   spinStartTime = null;
   function animate(ts){
     if(!spinStartTime) spinStartTime=ts;
     var elapsed = ts-spinStartTime;
     var progress = Math.min(elapsed/spinDuration,1);
-    // Ease out cubic
+    
     var ease = 1-Math.pow(1-progress,3);
     var current = spinStartAngle + (spinEndAngle-spinStartAngle)*ease;
     drawWheel(current);
@@ -2913,7 +2947,7 @@ function showSpinResult(coins){
   resultEl.style.display='block';
   resultEl.innerHTML='🎉 You won <span style="color:#f59e0b">'+coins+' coins</span>! Added to your wallet!';
   document.getElementById('spin-btn').style.display='none';
-  // Save to Firebase
+  
   saveQuizResult(quizScore, coins);
 }
 
@@ -2929,16 +2963,16 @@ function saveQuizResult(score, coins){
   var todayKey=getTodayKey();
   var p=currentUserProfile||{};
   var isKid = p.role==='child';
-  // Save quiz result — full Q&A only for kids, summary only for parents
+  
   db.collection('quiz').doc(uid+'_'+todayKey).set({
     uid:uid, userName:p.name||'User', score:score,
     coinsWon:coins, date:new Date().toISOString(),
     completed:true, role:p.role||'child',
-    answers: isKid ? quizAnswers : [] // Only save detailed Q&A for kids
+    answers: isKid ? quizAnswers : [] 
   }).then(function(){
-    // AUTO CLEANUP — only for kids, delete Q&A older than 5 days
+    
     if(isKid) autoCleanupQuiz(uid);
-    // Update wallet
+    
     return db.collection('wallets').doc(uid).get();
   }).then(function(doc){
     var current = doc.exists?(doc.data().coins||0):0;
@@ -2954,7 +2988,7 @@ function saveQuizResult(score, coins){
       totalEarned: (doc.exists?doc.data().totalEarned||0:0)+coins
     });
   }).then(function(){
-    // Add quiz earnings to task earnings
+    
     if(score>0 && data){
       var kid = currentUserProfile&&currentUserProfile.linkedKid;
       if(kid){
@@ -2978,9 +3012,8 @@ function saveQuizResult(score, coins){
   }).catch(function(e){ showToast('Error saving: '+e.message); console.error(e); });
 }
 
-// ── AUTO CLEANUP — Keep only last 5 days of quiz Q&A ──
 function autoCleanupQuiz(uid){
-  // Generate keys for last 5 days (keep these)
+  
   var keepKeys = [];
   for(var i=0; i<5; i++){
     var d = new Date();
@@ -2988,16 +3021,16 @@ function autoCleanupQuiz(uid){
     keepKeys.push(uid+'_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
   }
 
-  // Fetch all quiz docs for this user
+  
   db.collection('quiz').where('uid','==',uid).get().then(function(snap){
     var batch = db.batch();
     var deleteCount = 0;
     snap.forEach(function(doc){
       if(keepKeys.indexOf(doc.id) === -1){
-        // This record is older than 5 days
-        // Keep score/coins but remove the heavy answers array
+        
+        
         if(doc.data().answers && doc.data().answers.length > 0){
-          // Update: remove answers field, keep summary data
+          
           batch.update(doc.ref, {
             answers: [],
             cleaned: true
@@ -3014,7 +3047,6 @@ function autoCleanupQuiz(uid){
   }).catch(function(e){ console.log('Cleanup fetch error:', e); });
 }
 
-// ── REDEEM ──
 function openRedeemModal(){
   var uid=currentUser&&currentUser.uid; if(!uid) return;
   db.collection('wallets').doc(uid).get().then(function(doc){
@@ -3045,7 +3077,7 @@ function doRedeem(){
       quizStreak: doc.exists?(doc.data().quizStreak||0):0,
       lastQuizDate: doc.exists?(doc.data().lastQuizDate||''):''
     },{ merge:true }).then(function(){
-      // Add rupees to kid's savings
+      
       var kid=currentUserProfile&&currentUserProfile.linkedKid;
       if(kid&&data){
         if(!data.bonuses) data.bonuses={dhruv:[],vedika:[]};
@@ -3061,16 +3093,9 @@ function doRedeem(){
   }).catch(function(e){showToast('Error: '+e.message);});
 }
 
-// ── FIRESTORE INDEX FALLBACK ──
-// If quiz history fails due to missing index, handle gracefully
-
-
-// ══════════════════════════════════════
-// KIDS ZONE — Timer, Coins & Games
-// ══════════════════════════════════════
 var currentGame = null;
 var kzTimer = null;
-var kzSecondsLeft = 3600; // 60 minutes
+var kzSecondsLeft = 3600; 
 var KZ_MAX_SECONDS = 3600;
 var KZ_MAX_COINS = 60;
 var kzTodayCoins = 0;
@@ -3079,7 +3104,7 @@ var kzTimerRunning = false;
 function getKzTodayKey(){ return 'kz_'+getTodayKey(); }
 
 function initKidsZone(){
-  // Load today's time used and coins from Firebase
+  
   var uid = currentUser&&currentUser.uid;
   if(!uid) return;
   db.collection('kidszone').doc(uid+'_'+getTodayKey()).get().then(function(doc){
@@ -3109,12 +3134,12 @@ function updateKzUI(){
   var coinsEl = document.getElementById('kz-coins-display');
   if(display) display.textContent = mins+':'+(secs<10?'0':'')+secs;
   if(bar) bar.style.width = (kzSecondsLeft/KZ_MAX_SECONDS*100)+'%';
-  // Color warning
-  if(kzSecondsLeft < 600){ // less than 10 mins
+  
+  if(kzSecondsLeft < 600){ 
     if(bar) bar.style.background='#fbbf24';
     if(display) display.style.color='#fbbf24';
   }
-  if(kzSecondsLeft < 300){ // less than 5 mins
+  if(kzSecondsLeft < 300){ 
     if(bar) bar.style.background='#fee2e2';
     if(display) display.style.color='#fee2e2';
   }
@@ -3132,11 +3157,11 @@ function startKzTimer(){
     }
     kzSecondsLeft--;
     updateKzUI();
-    // Save to Firebase every 30 seconds
+    
     if(kzSecondsLeft % 30 === 0) saveKzProgress();
-    // Warning at 5 minutes
+    
     if(kzSecondsLeft === 300) showToast('⏰ 5 minutes left in Kids Zone!');
-    // Warning at 1 minute
+    
     if(kzSecondsLeft === 60) showToast('⚠️ Only 1 minute left!');
   }, 1000);
 }
@@ -3156,7 +3181,7 @@ function saveKzProgress(){
     secondsUsed: secondsUsed,
     coinsEarned: kzTodayCoins
   }).then(function(){
-    // Auto cleanup kidszone records older than 5 days
+    
     autoCleanupKidszone(uid);
   }).catch(function(){});
 }
@@ -3184,7 +3209,7 @@ function showTimeUp(){
   document.getElementById('kids-game-area').style.display='none';
   var msg = document.getElementById('kz-coins-earned-msg');
   if(msg) msg.textContent = '🪙 You earned '+kzTodayCoins+' coins today!';
-  // Trigger celebration if coins earned
+  
   if(kzTodayCoins > 0) showCelebration('dhruv');
 }
 
@@ -3197,9 +3222,9 @@ function awardKzCoins(amount){
   kzTodayCoins += actual;
   updateKzUI();
   saveKzProgress();
-  // Add coins to BOTH Dhruv and Vedika wallets
+  
   ['dhruv','vedika'].forEach(function(kid){
-    // Find uid for each kid
+    
     db.collection('users').where('linkedKid','==',kid).get().then(function(snap){
       snap.forEach(function(doc){
         var kidUid = doc.id;
@@ -3236,11 +3261,10 @@ function exitGame(){
   currentGame=null;
   document.getElementById('kids-game-menu').style.display='grid';
   document.getElementById('kids-game-area').style.display='none';
-  // Update coin indicator when going back to menu
+  
   updateKzUI();
 }
 
-// ── MEMORY CARD GAME ── (+10 coins on complete)
 function buildMemoryGame(gc){
   var emojis=['🐯','🐼','🦁','🐘','🦊','🐸','🦋','🐬','🌸','🍕','⭐','🎯'];
   var cards=[].concat(emojis,emojis);
@@ -3277,7 +3301,6 @@ function buildMemoryGame(gc){
   render();
 }
 
-// ── SLIDING PUZZLE GAME ── (+15 coins on solve)
 function buildPuzzleGame(gc){
   var size=3,tiles=[],blank=size*size-1;
   for(var i=0;i<size*size;i++) tiles.push(i);
@@ -3312,7 +3335,6 @@ function buildPuzzleGame(gc){
   render();
 }
 
-// ── WORD SEARCH ── (+20 coins on complete)
 function buildWordSearch(gc){
   var words=['DHRUV','VEDIKA','MUMMY','PAPA','INDIA','JAIPUR','TIGER','PANDA'];
   var gridSize=10,grid=[],placed=[];
@@ -3363,7 +3385,6 @@ function buildWordSearch(gc){
   render();
 }
 
-// ── TIC TAC TOE ── (+5 coins per round win, max 3 rounds)
 function buildTicTacToe(gc){
   var board=Array(9).fill(''),current='X',winsX=0,winsO=0,draws=0,round=1,maxRounds=3,coinsGiven=false;
   function checkWin(){
@@ -3410,9 +3431,6 @@ function buildTicTacToe(gc){
   render();
 }
 
-// ══════════════════════════════════════
-// PARENT COMMENTS
-// ══════════════════════════════════════
 var COMMENT_TYPES = {
   appreciation:{icon:'🌟',color:'#f59e0b',bg:'#fef3c7',label:'Appreciation'},
   improve:{icon:'💡',color:'#3b82f6',bg:'#dbeafe',label:'Improve'},
@@ -3445,7 +3463,7 @@ function saveComment(){
   if(!data.comments) data.comments={dhruv:[],vedika:[]};
   if(!data.comments[selectedKid]) data.comments[selectedKid]=[];
   data.comments[selectedKid].unshift(comment);
-  // Keep only last 20 comments per kid
+  
   data.comments[selectedKid] = data.comments[selectedKid].slice(0,20);
   saveData();
   closeModal('modal-add-comment');
@@ -3460,7 +3478,7 @@ function renderComments(){
   var comments = (data.comments&&data.comments[selectedKid])||[];
   var el = document.getElementById('comments-display');
   var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
-  // Show add button only for parents
+  
   var addBtn = document.getElementById('add-comment-btn');
   if(addBtn) addBtn.style.display = isParent?'':'none';
 
@@ -3470,7 +3488,7 @@ function renderComments(){
        'No messages from parents yet 😊')+'</div>';
     return;
   }
-  // Show latest 3, with "see all" option
+  
   var recent = comments.slice(0,3);
   el.innerHTML = recent.map(function(c,i){
     var ct = COMMENT_TYPES[c.type]||COMMENT_TYPES.appreciation;
@@ -3523,9 +3541,6 @@ function openAllComments(){
   document.body.appendChild(m);
 }
 
-// ══════════════════════════════════════
-// EARNINGS STATEMENT
-// ══════════════════════════════════════
 var statementKid = 'dhruv';
 
 function openStatementModal(){
@@ -3549,14 +3564,14 @@ function renderStatement(){
   var transactions = [];
   var color = kid==='dhruv'?'var(--blue)':'var(--pink)';
 
-  // Build transaction history from all weeks
+  
   var allChecks = data.checks[kid]||{};
   var allTasks = [].concat(data.tasks.vacation||[], data.tasks.school||[]);
 
-  // Group by date
+  
   var dateMap = {};
   Object.keys(allChecks).forEach(function(key){
-    // key format: dhruv_vacation_2024-1-15
+    
     var parts = key.split('_');
     if(parts.length<3) return;
     var dateStr = parts[parts.length-1];
@@ -3569,7 +3584,7 @@ function renderStatement(){
     }
   });
 
-  // Add task earnings as transactions
+  
   Object.keys(dateMap).sort().reverse().forEach(function(dateStr){
     var parts = dateStr.split('-');
     var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
@@ -3580,7 +3595,7 @@ function renderStatement(){
     });
   });
 
-  // Add bonuses
+  
   (data.bonuses&&data.bonuses[kid]||[]).forEach(function(b){
     transactions.push({
       type:'bonus', amount:b.amount,
@@ -3590,7 +3605,7 @@ function renderStatement(){
     });
   });
 
-  // Add spending
+  
   var spent = data.spent&&data.spent[kid]||0;
   if(spent>0){
     transactions.push({
@@ -3601,10 +3616,10 @@ function renderStatement(){
     });
   }
 
-  // Sort by date descending
+  
   transactions.sort(function(a,b){return b.date-a.date;});
 
-  // Calculate totals
+  
   var totalEarned = transactions.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0);
   var totalSpent = Math.abs(transactions.filter(function(t){return t.amount<0;}).reduce(function(s,t){return s+t.amount;},0));
   var balance = totalEarned-totalSpent;
@@ -3613,7 +3628,7 @@ function renderStatement(){
   document.getElementById('stmt-total-spent').textContent='₹'+totalSpent;
   document.getElementById('stmt-balance').textContent='₹'+balance;
 
-  // Render transactions with running balance
+  
   var runBal = balance;
   var html = transactions.length===0?
     '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">No transactions yet. Start completing tasks!</div>':
@@ -3627,7 +3642,7 @@ function renderStatement(){
       transactions.map(function(t,i){
         var amt = t.amount;
         var bal = balance;
-        // Running balance (approximate)
+        
         var rowBal = totalEarned - totalSpent;
         return '<tr style="border-bottom:1px solid #f3f4f6;background:'+( i%2===0?'#fff':'#f9fafb')+'">'+
           '<td style="padding:6px 8px;color:#6b7280;white-space:nowrap">'+
@@ -3646,7 +3661,7 @@ function renderStatement(){
 
   document.getElementById('stmt-transactions').innerHTML = html;
 
-  // Update preview on home
+  
   renderStatementPreview();
 }
 
@@ -3680,10 +3695,6 @@ function renderStatementPreview(){
     '</div>';
 }
 
-// ══════════════════════════════════════
-// STORIES SYSTEM
-// ══════════════════════════════════════
-// ── WEEKLY STORY ROTATION ──
 function getWeekNumber(){
   var d=new Date();
   d.setHours(0,0,0,0);
@@ -3692,7 +3703,6 @@ function getWeekNumber(){
   return Math.ceil((((d-y)/86400000)+1)/7);
 }
 
-// FULL STORY BANK — all stories available
 var STORY_BANK = {
   moral:[
     {
@@ -3922,14 +3932,13 @@ var STORY_BANK = {
   ]
 };
 
-// Get this week's stories (rotates every Monday)
 function getWeeklyStories(){
   var week = getWeekNumber();
   var result = {moral:[],financial:[],entrepreneur:[]};
   ['moral','financial','entrepreneur'].forEach(function(cat){
     var bank = STORY_BANK[cat];
     var total = bank.length;
-    // Pick 2-3 stories for this week using week number as seed
+    
     var startIdx = week % total;
     var count = Math.min(3, total);
     for(var i=0;i<count;i++){
@@ -3939,13 +3948,11 @@ function getWeeklyStories(){
   return result;
 }
 
-// STORIES is now dynamic — changes every week!
 var STORIES = getWeeklyStories();
 
-// Show which week's stories are currently showing
 function getWeekLabel(){
   var d=new Date();
-  // Get Monday of current week
+  
   var day=d.getDay(); var diff=d.getDate()-(day===0?6:day-1);
   var monday=new Date(d.setDate(diff));
   return 'Week of '+monday.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
@@ -3955,7 +3962,7 @@ var currentStory = null;
 var currentPage = 0;
 
 function openStories(category){
-  // Refresh stories for current week
+  
   STORIES = getWeeklyStories();
   var stories = STORIES[category]||[];
   var titles = {moral:'📖 Moral Stories',financial:'💰 Money Stories',entrepreneur:'🚀 Success Stories'};
@@ -3998,20 +4005,20 @@ function renderStoryPage(){
   var isMoral = page.moral;
   container.innerHTML =
     '<div style="background:'+page.bg+';min-height:400px;display:flex;flex-direction:column">'+
-      // Header
+      
       '<div style="background:rgba(0,0,0,.08);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">'+
         '<button onclick="currentPage>0?goStoryPage(-1):openStories(currentStory.category)" style="border:none;background:rgba(0,0,0,.1);border-radius:50px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">← Back</button>'+
         '<div style="font-size:11px;font-weight:700;color:#374151">'+s.title+'</div>'+
         '<button onclick="closeModal(\'modal-stories\')" style="border:none;background:rgba(0,0,0,.1);border-radius:50%;width:28px;height:28px;cursor:pointer">✕</button>'+
       '</div>'+
-      // Progress bar
+      
       '<div style="background:rgba(0,0,0,.1);height:4px"><div style="height:4px;background:'+(isMoral?'#059669':'#7c3aed')+';width:'+(((currentPage+1)/total)*100)+'%;transition:width .4s ease"></div></div>'+
-      // Main scene
+      
       '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;text-align:center">'+
         '<div style="font-size:56px;margin-bottom:16px;animation:bob 2s ease-in-out infinite">'+page.scene+'</div>'+
         '<div style="font-size:'+(isMoral?'13':'14')+'px;line-height:1.8;color:#1f2937;font-weight:'+(isMoral?'700':'400')+';max-width:320px;'+(isMoral?'background:rgba(255,255,255,.6);border-radius:12px;padding:12px;':'')+'">'+page.text+'</div>'+
       '</div>'+
-      // Navigation
+      
       '<div style="padding:16px;display:flex;gap:10px;align-items:center">'+
         '<div style="font-size:11px;color:#6b7280;font-weight:600">'+(currentPage+1)+' / '+total+'</div>'+
         '<div style="flex:1"></div>'+
@@ -4027,11 +4034,6 @@ function goStoryPage(dir){
   renderStoryPage();
 }
 
-// ══════════════════════════════════════
-// NEW GAMES
-// ══════════════════════════════════════
-
-// SNAKE & LADDER
 function buildSnakeLadder(gc){
   var SIZE=10, TOTAL=100;
   var SNAKES={97:78,95:56,88:24,62:18,36:6,32:10};
@@ -4043,7 +4045,7 @@ function buildSnakeLadder(gc){
 
   function move(player, steps){
     var newPos = pos[player]+steps;
-    if(newPos>TOTAL) return; // Can't go beyond 100
+    if(newPos>TOTAL) return; 
     if(SNAKES[newPos]){
       setTimeout(function(){pos[player]=SNAKES[newPos];render();},400);
     } else if(LADDERS[newPos]){
@@ -4070,7 +4072,7 @@ function buildSnakeLadder(gc){
 
   function render(){
     var winner = pos.X===TOTAL?'🐯 Dhruv':pos.O===TOTAL?'🐼 Vedika':null;
-    // Build 10x10 board
+    
     var cells=[];
     for(var r=9;r>=0;r--){
       var row=[];
@@ -4114,7 +4116,6 @@ function buildSnakeLadder(gc){
   render();
 }
 
-// MATH CHALLENGE
 function buildMathChallenge(gc){
   var scores={X:0,O:0},turn='X',q=null,answered=false,round=0,maxRounds=10,coinsGiven=false;
 
@@ -4171,7 +4172,6 @@ function buildMathChallenge(gc){
   render();
 }
 
-// BUSINESS GAME
 function buildBusinessGame(gc){
   var money=100, inventory={}, day=1, maxDays=7, coinsGiven=false;
   var ITEMS=[
@@ -4254,7 +4254,6 @@ function buildBusinessGame(gc){
   render();
 }
 
-// DRAWING BOARD
 function buildDrawing(gc){
   gc.innerHTML=
     '<div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
@@ -4294,7 +4293,6 @@ function buildDrawing(gc){
   window.clearCanvas=function(){ctx.clearRect(0,0,canvas.width,canvas.height);};
 }
 
-// SPIN WHEEL WITH QUESTIONS
 function buildSpinWheel(gc){
   var PRIZES=[
     {label:'10🪙',coins:10,color:'#7c3aed'},
@@ -4401,7 +4399,6 @@ function buildSpinWheel(gc){
   render();
 }
 
-// Update startGame to include new games
 var _origStartGame = startGame;
 function startGame(game){
   if(kzSecondsLeft<=0){showTimeUp();return;}
@@ -4431,7 +4428,6 @@ function startGame(game){
   else if(game==='spinwheel')buildSpinWheel(gc);
 }
 
-// ══ UPDATE RENDER TO INCLUDE NEW SECTIONS ══
 var _origRender = render;
 function render(){
   if(!data||!document.getElementById('screen-app').classList.contains('active'))return;
@@ -4442,18 +4438,15 @@ function render(){
   document.getElementById('tasks-title').textContent=selectedKid==='dhruv'?"Dhruv's Tasks":"Vedika's Tasks";
 }
 
-// ══════════════════════════════════════
-// BIRTHDAY GREETING CARD
-// ══════════════════════════════════════
 function checkBirthday(){
   var p = currentUserProfile||{};
   if(!p.dob) return;
   var today = new Date();
   var dob = new Date(p.dob);
-  // Check if today is their birthday (same day and month)
+  
   if(dob.getDate()===today.getDate() && dob.getMonth()===today.getMonth()){
     var age = today.getFullYear() - dob.getFullYear();
-    // Only show once per session
+    
     if(sessionStorage.getItem('bday_shown_'+currentUser.uid)) return;
     sessionStorage.setItem('bday_shown_'+currentUser.uid,'1');
     setTimeout(function(){ showBirthdayCard(p, age); }, 800);
@@ -4466,7 +4459,7 @@ function showBirthdayCard(p, age){
   var emoji = p.avatar||'🎂';
   var name = p.name||'Champion';
 
-  // Confetti burst
+  
   var colors=['#f59e0b','#ef4444','#3b82f6','#ec4899','#059669','#7c3aed','#fbbf24'];
   for(var i=0;i<30;i++){
     (function(idx){
@@ -4489,17 +4482,17 @@ function showBirthdayCard(p, age){
   card.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';
   card.innerHTML=
     '<div style="background:#fff;border-radius:24px;padding:0;width:100%;max-width:360px;overflow:hidden;animation:pop .4s ease;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+
-      // Header
+      
       '<div style="background:linear-gradient(135deg,'+color+',#f59e0b);padding:30px 20px;text-align:center;position:relative;overflow:hidden">'+
         '<div style="font-size:14px;font-weight:800;color:rgba(255,255,255,.85);margin-bottom:6px;letter-spacing:1px">🎉 HAPPY BIRTHDAY 🎉</div>'+
         '<div style="font-size:70px;margin-bottom:8px;animation:bob 1s ease-in-out infinite">'+emoji+'</div>'+
         '<div style="font-size:28px;font-weight:900;color:#fff">'+name+'!</div>'+
         '<div style="font-size:16px;color:rgba(255,255,255,.9);margin-top:4px">You are '+age+' years old today! 🥳</div>'+
-        // Decorative circles
+        
         '<div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.15)"></div>'+
         '<div style="position:absolute;bottom:-30px;left:-10px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.1)"></div>'+
       '</div>'+
-      // Body
+      
       '<div style="padding:20px;text-align:center">'+
         '<div style="font-size:32px;margin-bottom:12px">🎂🎈🎁🌟🎊</div>'+
         '<div style="font-size:14px;color:#374151;line-height:1.7;margin-bottom:16px">'+
@@ -4510,7 +4503,7 @@ function showBirthdayCard(p, age){
             'Wishing you a wonderful day<br>filled with happiness! 🌟<br><br>'+
             '<span style="font-weight:700;color:'+color+'">Have a fantastic birthday!</span>'+
           ')+'</div>'+
-        // Birthday bonus message for kids
+        
         (isKid?'<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:12px;margin-bottom:14px;border:2px solid #f59e0b">'+
           '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px">🎁 BIRTHDAY BONUS!</div>'+
           '<div style="font-size:20px;font-weight:900;color:#92400e">+50 🪙 Birthday Coins!</div>'+
@@ -4520,12 +4513,12 @@ function showBirthdayCard(p, age){
       '</div>'+
     '</div>';
 
-  // Give birthday bonus coins to kids
+  
   if(isKid){
     var uid = currentUser&&currentUser.uid;
     db.collection('wallets').doc(uid).get().then(function(doc){
       var current = doc.exists?(doc.data().coins||0):0;
-      // Only give once per birthday (check if already given this year)
+      
       var lastBday = doc.exists?(doc.data().lastBdayYear||0):0;
       var thisYear = new Date().getFullYear();
       if(lastBday!==thisYear){
@@ -4541,9 +4534,6 @@ function showBirthdayCard(p, age){
   document.body.appendChild(card);
 }
 
-// ══════════════════════════════════════
-// STATEMENT PDF & EXCEL DOWNLOAD
-// ══════════════════════════════════════
 function getStatementTransactions(kid){
   if(!data) return [];
   var transactions=[];
@@ -4586,7 +4576,7 @@ function downloadStatementPDF(){
     var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     var pageW=doc.internal.pageSize.getWidth();
 
-    // Header
+    
     doc.setFillColor(29,78,216);
     doc.rect(0,0,pageW,40,'F');
     doc.setTextColor(255,255,255);
@@ -4597,7 +4587,7 @@ function downloadStatementPDF(){
     doc.setFontSize(10);
     doc.text('Generated: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),pageW/2,32,{align:'center'});
 
-    // Summary boxes
+    
     doc.setTextColor(0,0,0);
     var boxY=48, boxW=55, boxH=20, gap=7, startX=14;
     [[totalEarned,'Total Earned','#dcfce7','#059669'],[totalSpent,'Total Spent','#fee2e2','#ef4444'],[balance,'Balance','#dbeafe','#1d4ed8']].forEach(function(b,i){
@@ -4611,7 +4601,7 @@ function downloadStatementPDF(){
       doc.text(b[1],x+boxW/2,boxY+16,{align:'center'});
     });
 
-    // Table header
+    
     var tableY=78;
     doc.setFillColor(59,130,246);
     doc.rect(14,tableY,pageW-28,8,'F');
@@ -4623,7 +4613,7 @@ function downloadStatementPDF(){
     doc.text('Debit',155,tableY+5.5);
     doc.text('Type',175,tableY+5.5);
 
-    // Rows
+    
     var y=tableY+10;
     doc.setFont('helvetica','normal');
     transactions.forEach(function(t,i){
@@ -4640,12 +4630,12 @@ function downloadStatementPDF(){
       y+=8;
     });
 
-    // Footer
+    
     doc.setTextColor(156,163,175);
     doc.setFontSize(8);
     doc.text('Journey of Champions — '+name+'\'s Statement — '+new Date().toLocaleDateString('en-IN'),pageW/2,285,{align:'center'});
 
-    doc.save('JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.pdf');
+    doc.save('JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\
     showToast('📄 PDF downloaded!');
   });
 }
@@ -4658,7 +4648,7 @@ function downloadStatementExcel(){
   var totalSpent=transactions.reduce(function(s,t){return s+(t.debit||0);},0);
   var balance=totalEarned-totalSpent;
 
-  // Build CSV content (works as Excel)
+  
   var rows=[
     ['Journey of Champions — '+name+'\'s Earnings Statement'],
     ['Generated:',new Date().toLocaleDateString('en-IN')],
@@ -4686,18 +4676,17 @@ function downloadStatementExcel(){
     }).join(',');
   }).join('\n');
 
-  // Add BOM for Excel to handle UTF-8
+  
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.download='JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\
   a.click();
   URL.revokeObjectURL(url);
   showToast('📊 Excel file downloaded!');
 }
 
-// Register Service Worker for PWA
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('/journey-of-champions/sw.js')
@@ -4706,12 +4695,11 @@ if('serviceWorker' in navigator){
   });
 }
 
-// PWA Install prompt for Android
 var deferredPrompt;
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   deferredPrompt = e;
-  // Show install banner after login
+  
   setTimeout(function(){
     if(deferredPrompt && document.getElementById('screen-app').classList.contains('active')){
       showInstallBanner();
