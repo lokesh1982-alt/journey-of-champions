@@ -349,6 +349,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
           <div class="section-body"><div class="badge-row" id="badges-display"></div></div>
         </div>
+
+        <!-- PARENT COMMENTS -->
+        <div class="section-card">
+          <div class="section-head" style="background:linear-gradient(135deg,#059669,#10b981)">
+            <div><div class="section-title">💬 Message from Parents</div><div class="section-sub" id="comments-kid-lbl">Dhruv</div></div>
+            <button class="btn btn-sm" id="add-comment-btn" style="background:rgba(255,255,255,.25);color:#fff;border:none" onclick="openAddComment()">+ Add</button>
+          </div>
+          <div class="section-body" id="comments-display"></div>
+        </div>
+
+        <!-- EARNINGS STATEMENT PREVIEW -->
+        <div class="section-card">
+          <div class="section-head" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
+            <div><div class="section-title">📒 Earnings Statement</div><div class="section-sub" id="statement-kid-lbl">All time</div></div>
+            <button onclick="openStatementModal()" style="background:rgba(255,255,255,.2);border:none;border-radius:50px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;cursor:pointer">View All</button>
+          </div>
+          <div class="section-body" id="statement-preview"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -439,6 +458,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
+  <!-- ADD COMMENT MODAL -->
+  <div class="modal-bg hidden" id="modal-add-comment">
+    <div class="modal">
+      <h2>💬 Message to <span id="comment-kid-name">Dhruv</span></h2>
+      <div class="input-group">
+        <label>Type your message</label>
+        <textarea id="comment-text" rows="4" placeholder="e.g. Great job today Dhruv! We are so proud of you 🌟" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;resize:none;font-family:inherit"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Type</label>
+        <select id="comment-type">
+          <option value="appreciation">🌟 Appreciation</option>
+          <option value="improve">💡 Area to Improve</option>
+          <option value="reminder">🔔 Reminder</option>
+          <option value="love">❤️ Love Note</option>
+          <option value="challenge">🏆 New Challenge</option>
+        </select>
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-outline" onclick="closeModal('modal-add-comment')">Cancel</button>
+        <button class="btn btn-green" onclick="saveComment()">💬 Send Message</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EARNINGS STATEMENT MODAL -->
+  <div class="modal-bg hidden" id="modal-statement">
+    <div class="modal" style="max-width:480px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 style="margin-bottom:0">📒 Earnings Statement</h2>
+        <button class="btn btn-sm btn-outline" onclick="closeModal('modal-statement')">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button onclick="setStatementKid('dhruv')" id="stmt-dhruv-btn" style="flex:1;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;background:var(--blue);color:#fff;cursor:pointer">🐯 Dhruv</button>
+        <button onclick="setStatementKid('vedika')" id="stmt-vedika-btn" style="flex:1;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;background:#e5e7eb;color:#374151;cursor:pointer">🐼 Vedika</button>
+      </div>
+      <!-- Balance summary -->
+      <div style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);border-radius:12px;padding:14px;margin-bottom:12px;color:#fff">
+        <div style="font-size:11px;opacity:.8;margin-bottom:6px">Account Summary</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+          <div><div style="font-size:18px;font-weight:900" id="stmt-total-earned">₹0</div><div style="font-size:9px;opacity:.8">Total Earned</div></div>
+          <div><div style="font-size:18px;font-weight:900" id="stmt-total-spent">₹0</div><div style="font-size:9px;opacity:.8">Total Spent</div></div>
+          <div><div style="font-size:18px;font-weight:900" id="stmt-balance">₹0</div><div style="font-size:9px;opacity:.8">Balance</div></div>
+        </div>
+      </div>
+      <!-- Transaction list -->
+      <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px">Transaction History</div>
+      <div id="stmt-transactions" style="max-height:360px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- STORIES MODAL -->
+  <div class="modal-bg hidden" id="modal-stories">
+    <div class="modal" style="max-width:480px;padding:0;overflow:hidden">
+      <div id="story-container"></div>
+    </div>
+  </div>
+
   <!-- REDEEM MODAL -->
   <div class="modal-bg hidden" id="modal-redeem">
     <div class="modal">
@@ -495,26 +572,75 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
 
     <!-- Game selector -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px" id="kids-game-menu">
-      <div onclick="startGame('memory')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
-        <div style="font-size:32px;margin-bottom:6px">🃏</div>
-        <div style="font-size:13px;font-weight:800;color:#111">Memory Cards</div>
-        <div style="font-size:11px;color:#6b7280;margin-top:2px">Match the pairs! +10🪙</div>
+    <div id="kids-game-menu">
+      <!-- Games Section -->
+      <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🎮 Games</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div onclick="startGame('memory')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🃏</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Memory Cards</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Match pairs! +10🪙</div>
+        </div>
+        <div onclick="startGame('puzzle')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🧩</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Number Puzzle</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Slide & solve! +15🪙</div>
+        </div>
+        <div onclick="startGame('wordsearch')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🔤</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Word Search</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Find words! +20🪙</div>
+        </div>
+        <div onclick="startGame('tictactoe')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">⭕</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Tic Tac Toe</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">3 rounds! +5🪙</div>
+        </div>
+        <div onclick="startGame('snakeladder')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🐍</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Snake & Ladder</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Classic fun! +15🪙</div>
+        </div>
+        <div onclick="startGame('mathchallenge')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">➕</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Math Challenge</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Compete! +10🪙</div>
+        </div>
+        <div onclick="startGame('business')" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #f59e0b" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🏪</div>
+          <div style="font-size:12px;font-weight:800;color:#92400e">Business Game</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Buy, sell, profit! +20🪙</div>
+        </div>
+        <div onclick="startGame('drawing')" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #e5e7eb" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🎨</div>
+          <div style="font-size:12px;font-weight:800;color:#111">Drawing Board</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Draw together!</div>
+        </div>
       </div>
-      <div onclick="startGame('puzzle')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
-        <div style="font-size:32px;margin-bottom:6px">🧩</div>
-        <div style="font-size:13px;font-weight:800;color:#111">Number Puzzle</div>
-        <div style="font-size:11px;color:#6b7280;margin-top:2px">Slide to solve! +15🪙</div>
-      </div>
-      <div onclick="startGame('wordsearch')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
-        <div style="font-size:32px;margin-bottom:6px">🔤</div>
-        <div style="font-size:13px;font-weight:800;color:#111">Word Search</div>
-        <div style="font-size:11px;color:#6b7280;margin-top:2px">Find all words! +20🪙</div>
-      </div>
-      <div onclick="startGame('tictactoe')" style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;transition:all .2s" class="game-card">
-        <div style="font-size:32px;margin-bottom:6px">⭕</div>
-        <div style="font-size:13px;font-weight:800;color:#111">Tic Tac Toe</div>
-        <div style="font-size:11px;color:#6b7280;margin-top:2px">Play 3 rounds! +5🪙</div>
+
+      <!-- Stories & Learning -->
+      <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📚 Stories & Learning</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div onclick="openStories('moral')" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #86efac" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">📖</div>
+          <div style="font-size:12px;font-weight:800;color:#065f46">Moral Stories</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Learn good values!</div>
+        </div>
+        <div onclick="openStories('financial')" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #93c5fd" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">💰</div>
+          <div style="font-size:12px;font-weight:800;color:#1d4ed8">Money Stories</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Learn about money!</div>
+        </div>
+        <div onclick="openStories('entrepreneur')" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #d8b4fe" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🚀</div>
+          <div style="font-size:12px;font-weight:800;color:#7e22ce">Success Stories</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Be inspired!</div>
+        </div>
+        <div onclick="startGame('spinwheel')" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:2px solid #fdba74" class="game-card">
+          <div style="font-size:28px;margin-bottom:4px">🎰</div>
+          <div style="font-size:12px;font-weight:800;color:#c2410c">Quiz Spin</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Spin & answer! +15🪙</div>
+        </div>
       </div>
     </div>
 
@@ -3242,6 +3368,1038 @@ function buildTicTacToe(gc){
     };
   }
   render();
+}
+
+// ══════════════════════════════════════
+// PARENT COMMENTS
+// ══════════════════════════════════════
+var COMMENT_TYPES = {
+  appreciation:{icon:'🌟',color:'#f59e0b',bg:'#fef3c7',label:'Appreciation'},
+  improve:{icon:'💡',color:'#3b82f6',bg:'#dbeafe',label:'Improve'},
+  reminder:{icon:'🔔',color:'#7c3aed',bg:'#ede9fe',label:'Reminder'},
+  love:{icon:'❤️',color:'#ec4899',bg:'#fce7f3',label:'Love Note'},
+  challenge:{icon:'🏆',color:'#059669',bg:'#d1fae5',label:'Challenge'}
+};
+
+function openAddComment(){
+  var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  if(!isParent){showToast('Only parents can add messages!');return;}
+  document.getElementById('comment-kid-name').textContent = selectedKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼';
+  document.getElementById('comment-text').value='';
+  document.getElementById('comment-type').value='appreciation';
+  document.getElementById('modal-add-comment').classList.remove('hidden');
+}
+
+function saveComment(){
+  var text = document.getElementById('comment-text').value.trim();
+  var type = document.getElementById('comment-type').value;
+  if(!text){showToast('Please type a message!');return;}
+  var p = currentUserProfile||{};
+  var comment = {
+    text:text, type:type,
+    from:p.name||'Parent', avatar:p.avatar||'👩',
+    date:new Date().toISOString(),
+    dateLabel:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'}),
+    kid:selectedKid, read:false
+  };
+  if(!data.comments) data.comments={dhruv:[],vedika:[]};
+  if(!data.comments[selectedKid]) data.comments[selectedKid]=[];
+  data.comments[selectedKid].unshift(comment);
+  // Keep only last 20 comments per kid
+  data.comments[selectedKid] = data.comments[selectedKid].slice(0,20);
+  saveData();
+  closeModal('modal-add-comment');
+  renderComments();
+  showToast('Message sent to '+(selectedKid==='dhruv'?'Dhruv':'Vedika')+'! 💬');
+  showCelebration(selectedKid);
+}
+
+function renderComments(){
+  if(!data) return;
+  document.getElementById('comments-kid-lbl').textContent = selectedKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼';
+  var comments = (data.comments&&data.comments[selectedKid])||[];
+  var el = document.getElementById('comments-display');
+  var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  // Show add button only for parents
+  var addBtn = document.getElementById('add-comment-btn');
+  if(addBtn) addBtn.style.display = isParent?'':'none';
+
+  if(comments.length===0){
+    el.innerHTML='<div style="text-align:center;padding:14px;font-size:12px;color:#9ca3af">'+
+      (isParent?'No messages yet. Tap "+ Add" to encourage '+(selectedKid==='dhruv'?'Dhruv':'Vedika')+'!':
+       'No messages from parents yet 😊')+'</div>';
+    return;
+  }
+  // Show latest 3, with "see all" option
+  var recent = comments.slice(0,3);
+  el.innerHTML = recent.map(function(c,i){
+    var ct = COMMENT_TYPES[c.type]||COMMENT_TYPES.appreciation;
+    return '<div style="background:'+ct.bg+';border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:3px solid '+ct.color+'">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<span style="font-size:16px">'+ct.icon+'</span>'+
+          '<span style="font-size:11px;font-weight:700;color:'+ct.color+'">'+ct.label+'</span>'+
+          '<span style="font-size:10px;color:#9ca3af">from '+c.from+'</span>'+
+        '</div>'+
+        '<span style="font-size:10px;color:#9ca3af">'+c.dateLabel+'</span>'+
+      '</div>'+
+      '<div style="font-size:13px;color:#1f2937;line-height:1.6">'+c.text+'</div>'+
+      (isParent?'<button onclick="deleteComment('+i+')" style="margin-top:5px;border:none;background:transparent;font-size:10px;color:#9ca3af;cursor:pointer">🗑️ Delete</button>':'')+
+    '</div>';
+  }).join('')+
+  (comments.length>3?'<div style="text-align:center;font-size:11px;color:var(--purple);cursor:pointer;padding:4px" onclick="openAllComments()">See all '+comments.length+' messages →</div>':'');
+}
+
+function deleteComment(idx){
+  if(!confirm('Delete this message?')) return;
+  if(!data.comments||!data.comments[selectedKid]) return;
+  data.comments[selectedKid].splice(idx,1);
+  saveData(); renderComments(); showToast('Message deleted!');
+}
+
+function openAllComments(){
+  var comments = (data.comments&&data.comments[selectedKid])||[];
+  var m = document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px';
+  var html = '<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div style="font-size:15px;font-weight:800">All Messages to '+(selectedKid==='dhruv'?'Dhruv 🐯':'Vedika 🐼')+'</div>'+
+      '<button onclick="this.closest(\'div\').parentElement.remove()" style="border:none;background:#f3f4f6;border-radius:50%;width:28px;height:28px;cursor:pointer">✕</button>'+
+    '</div>'+
+    comments.map(function(c){
+      var ct=COMMENT_TYPES[c.type]||COMMENT_TYPES.appreciation;
+      return '<div style="background:'+ct.bg+';border-radius:10px;padding:10px;margin-bottom:8px;border-left:3px solid '+ct.color+'">'+
+        '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">'+
+          '<span>'+ct.icon+'</span><span style="font-size:11px;font-weight:700;color:'+ct.color+'">'+ct.label+'</span>'+
+          '<span style="font-size:10px;color:#9ca3af;margin-left:auto">'+c.dateLabel+'</span>'+
+        '</div>'+
+        '<div style="font-size:12px;color:#1f2937;line-height:1.6">'+c.text+'</div>'+
+        '<div style="font-size:10px;color:#9ca3af;margin-top:3px">— '+c.from+'</div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+  m.innerHTML=html;
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+// ══════════════════════════════════════
+// EARNINGS STATEMENT
+// ══════════════════════════════════════
+var statementKid = 'dhruv';
+
+function openStatementModal(){
+  statementKid = selectedKid;
+  renderStatement();
+  document.getElementById('modal-statement').classList.remove('hidden');
+}
+
+function setStatementKid(kid){
+  statementKid = kid;
+  document.getElementById('stmt-dhruv-btn').style.background = kid==='dhruv'?'var(--blue)':'#e5e7eb';
+  document.getElementById('stmt-dhruv-btn').style.color = kid==='dhruv'?'#fff':'#374151';
+  document.getElementById('stmt-vedika-btn').style.background = kid==='vedika'?'var(--pink)':'#e5e7eb';
+  document.getElementById('stmt-vedika-btn').style.color = kid==='vedika'?'#fff':'#374151';
+  renderStatement();
+}
+
+function renderStatement(){
+  if(!data) return;
+  var kid = statementKid;
+  var transactions = [];
+  var color = kid==='dhruv'?'var(--blue)':'var(--pink)';
+
+  // Build transaction history from all weeks
+  var allChecks = data.checks[kid]||{};
+  var allTasks = [].concat(data.tasks.vacation||[], data.tasks.school||[]);
+
+  // Group by date
+  var dateMap = {};
+  Object.keys(allChecks).forEach(function(key){
+    // key format: dhruv_vacation_2024-1-15
+    var parts = key.split('_');
+    if(parts.length<3) return;
+    var dateStr = parts[parts.length-1];
+    var ch = allChecks[key];
+    var earned = 0;
+    allTasks.forEach(function(t){if(ch[t.id])earned+=t.amount;});
+    if(earned>0){
+      if(!dateMap[dateStr]) dateMap[dateStr]=0;
+      dateMap[dateStr]+=earned;
+    }
+  });
+
+  // Add task earnings as transactions
+  Object.keys(dateMap).sort().reverse().forEach(function(dateStr){
+    var parts = dateStr.split('-');
+    var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    transactions.push({
+      type:'earned', amount:dateMap[dateStr], date:d,
+      label:'Tasks completed',
+      icon:'✅', color:'#059669', bg:'#f0fdf4'
+    });
+  });
+
+  // Add bonuses
+  (data.bonuses&&data.bonuses[kid]||[]).forEach(function(b){
+    transactions.push({
+      type:'bonus', amount:b.amount,
+      date:new Date(b.date||Date.now()),
+      label:'Bonus: '+(b.reason||'Reward'),
+      icon:'🎁', color:'#f59e0b', bg:'#fef3c7'
+    });
+  });
+
+  // Add spending
+  var spent = data.spent&&data.spent[kid]||0;
+  if(spent>0){
+    transactions.push({
+      type:'spent', amount:-spent,
+      date:new Date(),
+      label:'Spending recorded',
+      icon:'💸', color:'#ef4444', bg:'#fee2e2'
+    });
+  }
+
+  // Sort by date descending
+  transactions.sort(function(a,b){return b.date-a.date;});
+
+  // Calculate totals
+  var totalEarned = transactions.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0);
+  var totalSpent = Math.abs(transactions.filter(function(t){return t.amount<0;}).reduce(function(s,t){return s+t.amount;},0));
+  var balance = totalEarned-totalSpent;
+
+  document.getElementById('stmt-total-earned').textContent='₹'+totalEarned;
+  document.getElementById('stmt-total-spent').textContent='₹'+totalSpent;
+  document.getElementById('stmt-balance').textContent='₹'+balance;
+
+  // Render transactions with running balance
+  var runBal = balance;
+  var html = transactions.length===0?
+    '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">No transactions yet. Start completing tasks!</div>':
+    '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+      '<tr style="background:#f9fafb;font-weight:700;color:#374151">'+
+        '<td style="padding:6px 8px">Date</td>'+
+        '<td style="padding:6px 8px">Description</td>'+
+        '<td style="padding:6px 8px;text-align:right">Amount</td>'+
+        '<td style="padding:6px 8px;text-align:right">Balance</td>'+
+      '</tr>'+
+      transactions.map(function(t,i){
+        var amt = t.amount;
+        var bal = balance;
+        // Running balance (approximate)
+        var rowBal = totalEarned - totalSpent;
+        return '<tr style="border-bottom:1px solid #f3f4f6;background:'+( i%2===0?'#fff':'#f9fafb')+'">'+
+          '<td style="padding:6px 8px;color:#6b7280;white-space:nowrap">'+
+            (t.date instanceof Date && !isNaN(t.date)?t.date.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—')+
+          '</td>'+
+          '<td style="padding:6px 8px">'+
+            '<span style="background:'+t.bg+';border-radius:4px;padding:1px 5px;font-size:10px">'+t.icon+' '+t.label+'</span>'+
+          '</td>'+
+          '<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+(amt>=0?'#059669':'#ef4444')+'">'+
+            (amt>=0?'+₹'+amt:'−₹'+Math.abs(amt))+
+          '</td>'+
+          '<td style="padding:6px 8px;text-align:right;font-weight:700;color:#374151">₹'+Math.max(0,balance)+'</td>'+
+        '</tr>';
+      }).join('')+
+    '</table>';
+
+  document.getElementById('stmt-transactions').innerHTML = html;
+
+  // Update preview on home
+  renderStatementPreview();
+}
+
+function renderStatementPreview(){
+  var el = document.getElementById('statement-preview');
+  var stmtKidLbl = document.getElementById('statement-kid-lbl');
+  if(!el||!data) return;
+  if(stmtKidLbl) stmtKidLbl.textContent = selectedKid==='dhruv'?'Dhruv':'Vedika';
+  var kid = selectedKid;
+  var earned = getAllTimeEarned(kid);
+  var spent = data.spent&&data.spent[kid]||0;
+  var balance = Math.max(0,earned-spent);
+  var bonusCount = (data.bonuses&&data.bonuses[kid]||[]).length;
+  el.innerHTML=
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">'+
+      '<div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center">'+
+        '<div style="font-size:15px;font-weight:900;color:#059669">₹'+earned+'</div>'+
+        '<div style="font-size:9px;color:#9ca3af">Total Earned</div>'+
+      '</div>'+
+      '<div style="background:#fee2e2;border-radius:8px;padding:8px;text-align:center">'+
+        '<div style="font-size:15px;font-weight:900;color:#ef4444">₹'+spent+'</div>'+
+        '<div style="font-size:9px;color:#9ca3af">Total Spent</div>'+
+      '</div>'+
+      '<div style="background:#dbeafe;border-radius:8px;padding:8px;text-align:center">'+
+        '<div style="font-size:15px;font-weight:900;color:#1d4ed8">₹'+balance+'</div>'+
+        '<div style="font-size:9px;color:#9ca3af">Balance</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="text-align:center;font-size:11px;color:var(--purple);cursor:pointer;padding:2px" onclick="openStatementModal()">'+
+      '📒 Tap to view full transaction history →'+
+    '</div>';
+}
+
+// ══════════════════════════════════════
+// STORIES SYSTEM
+// ══════════════════════════════════════
+// ── WEEKLY STORY ROTATION ──
+function getWeekNumber(){
+  var d=new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  var y=new Date(d.getFullYear(),0,1);
+  return Math.ceil((((d-y)/86400000)+1)/7);
+}
+
+// FULL STORY BANK — all stories available
+var STORY_BANK = {
+  moral:[
+    {
+      title:'The Honest Woodcutter',emoji:'🪓',duration:'short',
+      pages:[
+        {scene:'🌲🪓🧔',text:'A poor woodcutter was cutting wood near a river when his axe slipped and fell into the deep water.',bg:'#dbeafe'},
+        {scene:'😢💧🌊',text:'He sat down and cried. Suddenly, a river goddess appeared holding a golden axe.',bg:'#e0f2fe'},
+        {scene:'✨👸🪓',text:'"Is this your axe?" she asked. The woodcutter shook his head. "No, mine is iron."',bg:'#f0f9ff'},
+        {scene:'🪙👸🪓',text:'She showed a silver axe. Again he said no. Finally she brought his old iron axe. "Yes! That\'s mine!"',bg:'#fef3c7'},
+        {scene:'🎁🧔😊',text:'Pleased by his honesty, she gave him all three axes! His honesty made him rich.',bg:'#f0fdf4'},
+        {scene:'⭐📚❤️',text:'MORAL: Honesty is the best policy. Being truthful always brings its own reward.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Thirsty Crow',emoji:'🐦',duration:'short',
+      pages:[
+        {scene:'☀️🐦💧',text:'On a hot summer day, a thirsty crow was searching desperately for water.',bg:'#fef3c7'},
+        {scene:'🏺🐦😮',text:'He found a pot with a little water at the bottom — but his beak could not reach it!',bg:'#fff7ed'},
+        {scene:'🤔🐦💡',text:'He thought hard. Then a brilliant idea came! He started picking up small pebbles one by one.',bg:'#fef9ec'},
+        {scene:'🪨🪨🪨🏺',text:'He dropped pebbles into the pot. Slowly, the water level began to rise.',bg:'#dbeafe'},
+        {scene:'🐦💧😊',text:'Finally the water reached the top and the crow drank happily! Smart thinking saved the day!',bg:'#f0fdf4'},
+        {scene:'⭐📚❤️',text:'MORAL: Where there is a will, there is a way. Use intelligence to solve problems.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Lion and the Mouse',emoji:'🦁',duration:'medium',
+      pages:[
+        {scene:'🦁😴🌿',text:'A mighty lion was sleeping when a tiny mouse accidentally ran across his face.',bg:'#fef3c7'},
+        {scene:'🦁😠🐭',text:'The lion woke in rage and caught the mouse. "I shall eat you!" he roared.',bg:'#fee2e2'},
+        {scene:'🐭🙏😢',text:'"Please spare me! One day I might help you!" squeaked the mouse.',bg:'#fff7ed'},
+        {scene:'🦁😂🐭',text:'The lion laughed. "You help ME?" But he let the mouse go.',bg:'#fef9ec'},
+        {scene:'🦁🕸️😨',text:'Days later, the lion got caught in a hunter\'s net and could not escape.',bg:'#fee2e2'},
+        {scene:'🐭✂️🦁',text:'The mouse heard his roar and chewed through the ropes with his sharp teeth!',bg:'#dbeafe'},
+        {scene:'⭐📚❤️',text:'MORAL: Be kind to everyone. No act of kindness is ever too small.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Golden Egg',emoji:'🐔',duration:'short',
+      pages:[
+        {scene:'🐔🥚✨',text:'A farmer had a magical hen that laid one golden egg every single day.',bg:'#fef3c7'},
+        {scene:'💰😊🌅',text:'Every morning he sold the egg and earned good money. His family lived comfortably.',bg:'#fff7ed'},
+        {scene:'🤑😈💭',text:'One day he thought — if the hen has golden eggs inside, why wait? He wanted them ALL at once!',bg:'#fee2e2'},
+        {scene:'🔪🐔😱',text:'He cut open the hen hoping to get all the eggs at once. But there were no eggs inside!',bg:'#fca5a5'},
+        {scene:'😢💔🌧️',text:'The farmer lost everything — his hen, his daily eggs, and his income. His greed destroyed his happiness.',bg:'#fee2e2'},
+        {scene:'⭐📚❤️',text:'MORAL: Do not be greedy. Be patient and grateful for what you have. Slow and steady wins the race.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Boy Who Cried Wolf',emoji:'🐺',duration:'short',
+      pages:[
+        {scene:'🧒🐑🌄',text:'A young shepherd boy watched sheep on a hill. He was bored and decided to play a trick.',bg:'#dbeafe'},
+        {scene:'📣😂🧒',text:'"Wolf! Wolf!" he cried. The villagers ran up the hill with sticks to help him.',bg:'#fff7ed'},
+        {scene:'😄🙄👨',text:'But there was no wolf! The boy laughed. The villagers went back, angry.',bg:'#fef3c7'},
+        {scene:'📣😂🧒',text:'He did it again! "Wolf! Wolf!" Again everyone came running. Again there was no wolf.',bg:'#fee2e2'},
+        {scene:'🐺😰🐑',text:'Then one day a REAL wolf came! The boy screamed for help. But nobody came.',bg:'#fca5a5'},
+        {scene:'⭐📚❤️',text:'MORAL: Always tell the truth. If you lie often, nobody will believe you when you tell the truth.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Tortoise and the Hare',emoji:'🐢',duration:'short',
+      pages:[
+        {scene:'🐢🐇🌲',text:'A fast hare and a slow tortoise decided to have a race. Everyone laughed at the tortoise.',bg:'#dbeafe'},
+        {scene:'🏃🐇💨',text:'The hare ran so fast he was far ahead. He thought "I\'ll take a nap, that slow tortoise can never catch me!"',bg:'#f0f9ff'},
+        {scene:'😴🐇🌞',text:'The hare fell asleep under a tree. The tortoise kept walking slowly but steadily.',bg:'#fef3c7'},
+        {scene:'🐢🏁✅',text:'Step by step, the tortoise reached the finish line! He won the race!',bg:'#d1fae5'},
+        {scene:'😱🐇😔',text:'The hare woke up and ran, but it was too late. The tortoise had already won!',bg:'#fee2e2'},
+        {scene:'⭐📚❤️',text:'MORAL: Slow and steady wins the race. Consistency and persistence beat speed and overconfidence.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Ant and the Grasshopper',emoji:'🐜',duration:'short',
+      pages:[
+        {scene:'☀️🌸🐜',text:'In summer, a hardworking ant collected food grain by grain every day and stored it carefully.',bg:'#fef3c7'},
+        {scene:'🎵🦗😎',text:'A grasshopper played music and danced all day. "Why work so hard? Enjoy life!" he told the ant.',bg:'#fff7ed'},
+        {scene:'❄️🌨️😰',text:'Winter came. The grasshopper had no food and was cold and hungry.',bg:'#dbeafe'},
+        {scene:'🐜🏠🌡️',text:'The ant was warm in his house with plenty of food stored from summer.',bg:'#d1fae5'},
+        {scene:'🦗🙏😢',text:'The grasshopper knocked at the ant\'s door, shivering. He wished he had worked instead of played.',bg:'#fee2e2'},
+        {scene:'⭐📚❤️',text:'MORAL: Work hard today so you can enjoy tomorrow. Saving for the future is always wise.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Two Friends and the Bear',emoji:'🐻',duration:'short',
+      pages:[
+        {scene:'👫🌲🌄',text:'Two friends were walking through a forest when suddenly they spotted a big bear coming towards them.',bg:'#dbeafe'},
+        {scene:'🏃😰🌳',text:'One friend quickly climbed a tree to safety. But the other friend could not climb.',bg:'#fff7ed'},
+        {scene:'🧍😨🐻',text:'The friend on the ground quickly lay down flat and held his breath, pretending to be dead.',bg:'#fef3c7'},
+        {scene:'🐻👃🧍',text:'The bear sniffed him all over. Bears do not eat the dead, so it walked away.',bg:'#f0fdf4'},
+        {scene:'👫💬😅',text:'"What did the bear whisper to you?" asked the friend in the tree. "Never trust a friend who runs away in danger!"',bg:'#fee2e2'},
+        {scene:'⭐📚❤️',text:'MORAL: A true friend stands by you in difficult times. Choose your friends wisely.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Kind Prince',emoji:'👑',duration:'medium',
+      pages:[
+        {scene:'👑🏰🌟',text:'A prince was told he would inherit the kingdom only if he learned the most important thing in life.',bg:'#fef3c7'},
+        {scene:'🧭🌍📚',text:'He travelled to mountains, oceans and cities, asking wise men what was the most important thing.',bg:'#dbeafe'},
+        {scene:'💰🤔👑',text:'One wise man said money. Another said power. Another said knowledge. The prince was confused.',bg:'#fff7ed'},
+        {scene:'👴🌾❤️',text:'An old farmer said: "Come work with me for one week." The prince worked, sweated and helped others.',bg:'#d1fae5'},
+        {scene:'🌅😊👨‍🌾',text:'By the end of the week, the prince felt true joy — not from gold, but from helping and connecting with people.',bg:'#fef9ec'},
+        {scene:'👑🤝🌍',text:'He returned and told his father: "Kindness and service are the most important things in life."',bg:'#f0fdf4'},
+        {scene:'⭐📚❤️',text:'MORAL: True wealth is kindness and service. Helping others gives deeper happiness than money or power.',bg:'#dcfce7',moral:true}
+      ]
+    }
+  ],
+  financial:[
+    {
+      title:'The Magic Piggy Bank',emoji:'🐷',duration:'short',
+      pages:[
+        {scene:'🐷🪙✨',text:'Rohan found a magic piggy bank that doubled any coin — but only if he waited 30 days!',bg:'#fef3c7'},
+        {scene:'🤔🧒💭',text:'His friend Riya spent her ₹10 on candy right away. Rohan waited patiently.',bg:'#fff7ed'},
+        {scene:'📅⏳🐷',text:'After 30 days, his ₹10 became ₹20! He put it back and waited again.',bg:'#dbeafe'},
+        {scene:'🐷🏦💎',text:'After 6 months of patience, Rohan had ₹640! Riya had nothing left.',bg:'#d1fae5'},
+        {scene:'⭐📚💰',text:'LESSON: Saving + Patience = Growth. This is called compound interest — money makes more money!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'Arjun\'s Lemonade Stand',emoji:'🍋',duration:'medium',
+      pages:[
+        {scene:'☀️🍋😊',text:'Arjun wanted a cricket bat costing ₹500. He had only ₹50 saved.',bg:'#fef3c7'},
+        {scene:'💡📋🤔',text:'He made a BUSINESS PLAN: spend ₹20 on lemons and sugar, make 20 cups, sell at ₹5 each.',bg:'#fff7ed'},
+        {scene:'🍋🥤🌞',text:'He sold all 20 cups on Sunday and earned ₹100! Cost was ₹20, profit was ₹80!',bg:'#dbeafe'},
+        {scene:'📅🔄💪',text:'He ran his stand every Sunday for 6 weeks, tracking all income and expenses carefully.',bg:'#ede9fe'},
+        {scene:'🏏🎉💰',text:'After 6 weeks, Arjun had enough to buy his cricket bat — earned with his own business!',bg:'#f0fdf4'},
+        {scene:'⭐💰🏆',text:'LESSON: Revenue − Expenses = Profit. Plan, work hard and save to achieve any goal!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Village Market',emoji:'🏪',duration:'medium',
+      pages:[
+        {scene:'🌅🏘️🛒',text:'Young Meera was given ₹100 to go to market and learn about buying and selling.',bg:'#fef3c7'},
+        {scene:'🍎🧺💰',text:'She bought 10 apples at ₹5 each for ₹50. She had ₹50 left.',bg:'#fff7ed'},
+        {scene:'🏃🍎📣',text:'She walked to another part of market and sold her apples for ₹8 each — ₹80 total!',bg:'#dbeafe'},
+        {scene:'🤔💡📊',text:'She made ₹30 profit! She used it to buy oranges and sold those too.',bg:'#fef9ec'},
+        {scene:'🏠📚❤️',text:'By end of day she had ₹145 instead of ₹100! She learned: buy low, sell high.',bg:'#dcfce7'},
+        {scene:'⭐💰🏪',text:'LESSON: Profit = Selling Price − Buying Price. Adding value creates profit!',bg:'#d1fae5',moral:true}
+      ]
+    },
+    {
+      title:'Riya Saves for a Dream',emoji:'🎨',duration:'short',
+      pages:[
+        {scene:'🎨👧✨',text:'Riya loved painting and dreamed of a professional art set costing ₹800.',bg:'#fce7f3'},
+        {scene:'💰📓✏️',text:'She started a savings diary — writing every rupee she received and spent.',bg:'#fff7ed'},
+        {scene:'🍬❌💪',text:'She said no to candy and small treats. Every saved rupee went into her art fund.',bg:'#dbeafe'},
+        {scene:'🎁👵💕',text:'On her birthday, relatives gave her ₹200. Instead of spending it, she saved it all.',bg:'#fef3c7'},
+        {scene:'🎨🌟😊',text:'After 3 months of careful saving, Riya bought her dream art set! Every painting felt extra special.',bg:'#f0fdf4'},
+        {scene:'⭐💰🎨',text:'LESSON: Track every rupee. Say no to small wants to achieve big dreams. Saving is a superpower!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Two Brothers\' Farm',emoji:'🌾',duration:'medium',
+      pages:[
+        {scene:'👨‍🌾👨‍🌾🌾',text:'Two brothers inherited a farm. One brother saved his harvest money. The other spent it all on fun.',bg:'#fef3c7'},
+        {scene:'🌱💰📦',text:'The saving brother used his money to buy better seeds and tools. His next harvest was bigger.',bg:'#d1fae5'},
+        {scene:'🎉🎪😊',text:'The spending brother had fun for months but then had no money when the dry season came.',bg:'#fff7ed'},
+        {scene:'☀️🌵😰',text:'During drought, crops failed. The saving brother had emergency money saved. He survived.',bg:'#fee2e2'},
+        {scene:'🤝🌻❤️',text:'The spending brother had to borrow money from his brother. He learned his lesson about saving.',bg:'#fef9ec'},
+        {scene:'⭐💰🌾',text:'LESSON: Always save part of what you earn. Emergency funds protect you when things go wrong.',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Coin\'s Journey',emoji:'🪙',duration:'short',
+      pages:[
+        {scene:'🪙✨🏦',text:'A single ₹1 coin was saved by a child named Ananya in a piggy bank.',bg:'#fef3c7'},
+        {scene:'🪙🪙🪙',text:'Every day she added one more coin. After 30 days, she had ₹30.',bg:'#dbeafe'},
+        {scene:'📈🐷💰',text:'After 3 months, she had ₹90. She put it in a savings account at the bank.',bg:'#d1fae5'},
+        {scene:'🏦📈✨',text:'The bank paid her extra money called INTEREST for keeping her money there.',bg:'#fef3c7'},
+        {scene:'🏦💎🎓',text:'Over years, her small daily savings grew into enough money for her college education!',bg:'#f0fdf4'},
+        {scene:'⭐💰🏦',text:'LESSON: Small amounts saved daily become big amounts over time. Start saving TODAY, even ₹1!',bg:'#dcfce7',moral:true}
+      ]
+    }
+  ],
+  entrepreneur:[
+    {
+      title:'Dhirubhai Ambani: Dreams Have No Limit',emoji:'🛢️',duration:'medium',
+      pages:[
+        {scene:'☕🧔💪',text:'Dhirubhai Ambani sold tea and fried snacks as a teenager to earn money for his family.',bg:'#fef3c7'},
+        {scene:'✈️🌍💼',text:'At 17, he went to Yemen as a petrol pump attendant. He dreamed BIG even while doing small work.',bg:'#fff7ed'},
+        {scene:'🏠💰🧵',text:'He returned to India with ₹500 and started trading spices and yarn from his home.',bg:'#dbeafe'},
+        {scene:'📈🏭⚡',text:'Through bold decisions and hard work, he built Reliance — one of India\'s largest companies!',bg:'#fef9ec'},
+        {scene:'🇮🇳💎🏆',text:'He gave millions of Indians jobs and proved that humble beginnings don\'t limit great futures!',bg:'#d1fae5'},
+        {scene:'⭐🚀❤️',text:'LESSON: Your background doesn\'t define your future. Hard work and big dreams can change everything!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'Kiran Mazumdar-Shaw: Never Give Up',emoji:'🔬',duration:'short',
+      pages:[
+        {scene:'🎓👩🔬',text:'Kiran wanted to be a master brewer but no company would hire a woman. She was rejected everywhere.',bg:'#fce7f3'},
+        {scene:'💡🏠🧪',text:'She started her own company, Biocon, from her GARAGE with just ₹10,000!',bg:'#fdf4ff'},
+        {scene:'😔💪🔬',text:'Banks refused loans. She faced rejection after rejection. But she never stopped.',bg:'#fee2e2'},
+        {scene:'📈🏭🌍',text:'Today Biocon is worth billions and makes medicines that save lives worldwide!',bg:'#dbeafe'},
+        {scene:'⭐💪❤️',text:'LESSON: Rejection is not the end. When one door closes, build your OWN door!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'APJ Abdul Kalam: The Missile Man',emoji:'🚀',duration:'medium',
+      pages:[
+        {scene:'📰🧒🌅',text:'Young Kalam sold newspapers early every morning to help his poor family in Rameswaram.',bg:'#dbeafe'},
+        {scene:'✈️💭🌟',text:'He was fascinated by birds flying and dreamed of making India fly. He studied hard despite poverty.',bg:'#fef3c7'},
+        {scene:'🚀🇮🇳💪',text:'He became a scientist and led India\'s missile program — giving India Agni and Prithvi missiles.',bg:'#fff7ed'},
+        {scene:'👨‍🔬🏆🇮🇳',text:'He became India\'s President — from selling newspapers to leading the nation!',bg:'#d1fae5'},
+        {scene:'📚❤️🌟',text:'He always said: "Dream is not what you see in sleep. Dream is the thing that does not let you sleep!"',bg:'#fef9ec'},
+        {scene:'⭐🚀❤️',text:'LESSON: No background is too humble for greatness. Education and hard work are your wings to fly!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'The Young Entrepreneur',emoji:'🏪',duration:'short',
+      pages:[
+        {scene:'🧒💡📋',text:'12-year-old Arya noticed her school had no good stationery shop nearby. Students walked far to buy pens.',bg:'#fef3c7'},
+        {scene:'🏪📦💰',text:'She asked her parents for ₹500 to buy stationery wholesale and sell it at school at a small profit.',bg:'#fff7ed'},
+        {scene:'😊🤝🎒',text:'Students loved buying from her — convenient and cheaper than the far shop! She sold out in 2 days.',bg:'#dbeafe'},
+        {scene:'📈💰🔄',text:'She reinvested profits, added more products, and started earning ₹500 profit every week!',bg:'#d1fae5'},
+        {scene:'🏦🎓💎',text:'By the end of the school year, she had saved enough for her own laptop — bought with her own earnings!',bg:'#f0fdf4'},
+        {scene:'⭐🏪💡',text:'LESSON: Look for problems around you. Solving a problem people have is the heart of every business!',bg:'#dcfce7',moral:true}
+      ]
+    },
+    {
+      title:'Ratan Tata: Strength in Kindness',emoji:'🚗',duration:'medium',
+      pages:[
+        {scene:'🧔🏭💼',text:'Ratan Tata took over the Tata Group when many said he was too young and inexperienced.',bg:'#dbeafe'},
+        {scene:'💪🏗️🌍',text:'He worked tirelessly, expanding Tata into cars, steel, hotels and technology across the world.',bg:'#fef3c7'},
+        {scene:'🚗💡🇮🇳',text:'He dreamed of giving every Indian family an affordable car. He created the Tata Nano — the world\'s cheapest car!',bg:'#fff7ed'},
+        {scene:'❤️🐕🤝',text:'He is known for his kindness — he never forgot workers, always supported employees and even adopted stray dogs!',bg:'#d1fae5'},
+        {scene:'🏆💰❤️',text:'Despite being one of India\'s richest, he lives simply and donates 60% of his wealth to charity.',bg:'#fef9ec'},
+        {scene:'⭐🚗❤️',text:'LESSON: True leadership combines vision, hard work AND kindness. Success is most meaningful when shared.',bg:'#dcfce7',moral:true}
+      ]
+    }
+  ]
+};
+
+// Get this week's stories (rotates every Monday)
+function getWeeklyStories(){
+  var week = getWeekNumber();
+  var result = {moral:[],financial:[],entrepreneur:[]};
+  ['moral','financial','entrepreneur'].forEach(function(cat){
+    var bank = STORY_BANK[cat];
+    var total = bank.length;
+    // Pick 2-3 stories for this week using week number as seed
+    var startIdx = week % total;
+    var count = Math.min(3, total);
+    for(var i=0;i<count;i++){
+      result[cat].push(bank[(startIdx+i)%total]);
+    }
+  });
+  return result;
+}
+
+// STORIES is now dynamic — changes every week!
+var STORIES = getWeeklyStories();
+
+// Show which week's stories are currently showing
+function getWeekLabel(){
+  var d=new Date();
+  // Get Monday of current week
+  var day=d.getDay(); var diff=d.getDate()-(day===0?6:day-1);
+  var monday=new Date(d.setDate(diff));
+  return 'Week of '+monday.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+var currentStory = null;
+var currentPage = 0;
+
+function openStories(category){
+  // Refresh stories for current week
+  STORIES = getWeeklyStories();
+  var stories = STORIES[category]||[];
+  var titles = {moral:'📖 Moral Stories',financial:'💰 Money Stories',entrepreneur:'🚀 Success Stories'};
+  var m = document.getElementById('modal-stories');
+  var container = document.getElementById('story-container');
+  container.innerHTML =
+    '<div style="background:linear-gradient(135deg,#4c1d95,#7c3aed);padding:16px;color:#fff;display:flex;align-items:center;justify-content:space-between">'+
+      '<div>'+
+        '<div style="font-size:15px;font-weight:800">'+titles[category]+'</div>'+
+        '<div style="font-size:10px;opacity:.75;margin-top:2px">🔄 '+getWeekLabel()+' · New stories every Monday!</div>'+
+      '</div>'+
+      '<button onclick="closeModal(\'modal-stories\')" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:28px;height:28px;color:#fff;cursor:pointer;font-size:14px">✕</button>'+
+    '</div>'+
+    '<div style="padding:16px">'+
+      stories.map(function(s,i){
+        return '<div onclick="startStory(\''+category+'\','+i+')" style="background:#f9fafb;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;border:2px solid #e5e7eb;display:flex;align-items:center;gap:12px" class="game-card">'+
+          '<div style="font-size:32px">'+s.emoji+'</div>'+
+          '<div>'+
+            '<div style="font-size:13px;font-weight:800;color:#111">'+s.title+'</div>'+
+            '<div style="font-size:10px;color:#9ca3af;margin-top:2px">'+s.pages.length+' pages · '+(s.duration==='short'?'2-3 min':'5 min read')+'</div>'+
+          '</div>'+
+          '<div style="margin-left:auto;font-size:18px;color:#7c3aed">›</div>'+
+        '</div>';
+      }).join('')+
+    '</div>';
+  m.classList.remove('hidden');
+}
+
+function startStory(category, idx){
+  currentStory = {category:category, idx:idx, data:STORIES[category][idx]};
+  currentPage = 0;
+  renderStoryPage();
+}
+
+function renderStoryPage(){
+  var s = currentStory.data;
+  var page = s.pages[currentPage];
+  var total = s.pages.length;
+  var container = document.getElementById('story-container');
+  var isMoral = page.moral;
+  container.innerHTML =
+    '<div style="background:'+page.bg+';min-height:400px;display:flex;flex-direction:column">'+
+      // Header
+      '<div style="background:rgba(0,0,0,.08);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">'+
+        '<button onclick="currentPage>0?goStoryPage(-1):openStories(currentStory.category)" style="border:none;background:rgba(0,0,0,.1);border-radius:50px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">← Back</button>'+
+        '<div style="font-size:11px;font-weight:700;color:#374151">'+s.title+'</div>'+
+        '<button onclick="closeModal(\'modal-stories\')" style="border:none;background:rgba(0,0,0,.1);border-radius:50%;width:28px;height:28px;cursor:pointer">✕</button>'+
+      '</div>'+
+      // Progress bar
+      '<div style="background:rgba(0,0,0,.1);height:4px"><div style="height:4px;background:'+(isMoral?'#059669':'#7c3aed')+';width:'+(((currentPage+1)/total)*100)+'%;transition:width .4s ease"></div></div>'+
+      // Main scene
+      '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;text-align:center">'+
+        '<div style="font-size:56px;margin-bottom:16px;animation:bob 2s ease-in-out infinite">'+page.scene+'</div>'+
+        '<div style="font-size:'+(isMoral?'13':'14')+'px;line-height:1.8;color:#1f2937;font-weight:'+(isMoral?'700':'400')+';max-width:320px;'+(isMoral?'background:rgba(255,255,255,.6);border-radius:12px;padding:12px;':'')+'">'+page.text+'</div>'+
+      '</div>'+
+      // Navigation
+      '<div style="padding:16px;display:flex;gap:10px;align-items:center">'+
+        '<div style="font-size:11px;color:#6b7280;font-weight:600">'+(currentPage+1)+' / '+total+'</div>'+
+        '<div style="flex:1"></div>'+
+        (currentPage<total-1?
+          '<button onclick="goStoryPage(1)" style="border:none;border-radius:50px;padding:10px 24px;font-size:13px;font-weight:800;background:#7c3aed;color:#fff;cursor:pointer">Next →</button>':
+          '<button onclick="closeModal(\'modal-stories\');showToast(\'Story complete! 🌟\');" style="border:none;border-radius:50px;padding:10px 24px;font-size:13px;font-weight:800;background:#059669;color:#fff;cursor:pointer">Finish ✅</button>')+
+      '</div>'+
+    '</div>';
+}
+
+function goStoryPage(dir){
+  currentPage = Math.max(0, Math.min(currentStory.data.pages.length-1, currentPage+dir));
+  renderStoryPage();
+}
+
+// ══════════════════════════════════════
+// NEW GAMES
+// ══════════════════════════════════════
+
+// SNAKE & LADDER
+function buildSnakeLadder(gc){
+  var SIZE=10, TOTAL=100;
+  var SNAKES={97:78,95:56,88:24,62:18,36:6,32:10};
+  var LADDERS={1:38,4:14,8:30,21:42,28:76,50:67,71:92,80:99};
+  var pos={X:0,O:0}, turn='X', rolling=false, rounds=0;
+  var coinsGiven=false;
+
+  function roll(){ return Math.floor(Math.random()*6)+1; }
+
+  function move(player, steps){
+    var newPos = pos[player]+steps;
+    if(newPos>TOTAL) return; // Can't go beyond 100
+    if(SNAKES[newPos]){
+      setTimeout(function(){pos[player]=SNAKES[newPos];render();},400);
+    } else if(LADDERS[newPos]){
+      setTimeout(function(){pos[player]=LADDERS[newPos];render();},400);
+    } else {
+      pos[player]=newPos;
+    }
+    if(pos[player]===TOTAL){
+      if(!coinsGiven){coinsGiven=true;setTimeout(function(){awardKzCoins(15);},300);}
+    }
+  }
+
+  function doRoll(){
+    if(rolling) return;
+    rolling=true;
+    var steps=roll();
+    move(turn,steps);
+    setTimeout(function(){
+      if(pos[turn]!==TOTAL) turn=turn==='X'?'O':'X';
+      rolling=false;
+      render();
+    },600);
+  }
+
+  function render(){
+    var winner = pos.X===TOTAL?'🐯 Dhruv':pos.O===TOTAL?'🐼 Vedika':null;
+    // Build 10x10 board
+    var cells=[];
+    for(var r=9;r>=0;r--){
+      var row=[];
+      for(var c=0;c<10;c++){
+        var num = r%2===1?(r*10)+(10-c):(r*10)+(c+1);
+        var hasX=pos.X===num,hasO=pos.O===num;
+        var hasSn=!!SNAKES[num],hasLd=!!LADDERS[num];
+        row.push({num:num,hasX:hasX,hasO:hasO,hasSn:hasSn,hasLd:hasLd});
+      }
+      cells.push(row);
+    }
+    gc.innerHTML=
+      '<div style="text-align:center;margin-bottom:8px;font-size:12px;font-weight:700">'+
+        '<span style="color:#3b82f6">🐯 Dhruv: pos '+pos.X+'</span> &nbsp;·&nbsp; '+
+        '<span style="color:#ec4899">🐼 Vedika: pos '+pos.O+'</span>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:1px;max-width:320px;margin:0 auto 10px;font-size:8px">'+
+      cells.map(function(row){
+        return row.map(function(cell){
+          var bg = cell.hasLd?'#d1fae5':cell.hasSn?'#fee2e2':'#f9fafb';
+          var icon = cell.hasX&&cell.hasO?'🐯🐼':cell.hasX?'🐯':cell.hasO?'🐼':
+                     cell.hasLd?'🪜':cell.hasSn?'🐍':'';
+          return '<div style="aspect-ratio:1;background:'+bg+';border:1px solid #e5e7eb;border-radius:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:7px">'+
+            '<div style="color:#9ca3af;font-size:6px">'+cell.num+'</div>'+
+            (icon?'<div>'+icon+'</div>':'')+
+          '</div>';
+        }).join('');
+      }).join('')+
+      '</div>'+
+      (winner?
+        '<div style="text-align:center;padding:10px;background:#d1fae5;border-radius:10px;margin-bottom:8px">'+
+          '<div style="font-size:16px;font-weight:900;color:#065f46">🎉 '+winner+' wins! +15🪙</div>'+
+          '<button onclick="buildSnakeLadder(document.getElementById(\'game-content\'))" style="margin-top:6px;border:none;border-radius:50px;padding:6px 16px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Play Again!</button>'+
+        '</div>':
+        '<div style="text-align:center;margin-bottom:8px;font-size:13px;font-weight:700;color:'+(turn==='X'?'#3b82f6':'#ec4899')+'">'+
+          (turn==='X'?'🐯 Dhruv':'🐼 Vedika')+'\'s turn!'+
+        '</div>')+
+      (!winner?'<button onclick="doRoll()" style="width:100%;border:none;border-radius:50px;padding:12px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;cursor:pointer">🎲 Roll Dice!</button>':'');
+    window.doRoll=doRoll;
+  }
+  render();
+}
+
+// MATH CHALLENGE
+function buildMathChallenge(gc){
+  var scores={X:0,O:0},turn='X',q=null,answered=false,round=0,maxRounds=10,coinsGiven=false;
+
+  function genQ(){
+    var ops=['+','-','×'];
+    var op=ops[Math.floor(Math.random()*3)];
+    var a=Math.floor(Math.random()*12)+1;
+    var b=Math.floor(Math.random()*12)+1;
+    if(op==='-'&&b>a){var tmp=a;a=b;b=tmp;}
+    var ans=op==='+'?a+b:op==='-'?a-b:a*b;
+    var wrong=[ans+1,ans-1,ans+2,ans-2].filter(function(x){return x!==ans&&x>0;});
+    var opts=[ans];
+    while(opts.length<4){var w=wrong[Math.floor(Math.random()*wrong.length)];if(opts.indexOf(w)<0)opts.push(w);}
+    opts.sort(function(){return Math.random()-.5;});
+    return {question:a+' '+op+' '+b+' = ?',answer:ans,options:opts};
+  }
+
+  function render(){
+    if(!q) q=genQ();
+    var done=round>=maxRounds;
+    if(done&&!coinsGiven){coinsGiven=true;setTimeout(function(){awardKzCoins(10);},300);}
+    gc.innerHTML=
+      '<div style="text-align:center;margin-bottom:10px">'+
+        '<span style="font-size:12px;font-weight:700;color:#3b82f6">🐯 Dhruv: '+scores.X+'</span>'+
+        '<span style="font-size:12px;font-weight:700;color:#9ca3af;margin:0 10px">Round '+(Math.min(round+1,maxRounds))+'/'+maxRounds+'</span>'+
+        '<span style="font-size:12px;font-weight:700;color:#ec4899">Vedika 🐼: '+scores.O+'</span>'+
+      '</div>'+
+      (!done?
+        '<div style="background:'+(turn==='X'?'#dbeafe':'#fce7f3')+';border-radius:14px;padding:20px;text-align:center;margin-bottom:12px">'+
+          '<div style="font-size:11px;font-weight:700;color:'+(turn==='X'?'#1d4ed8':'#9d174d')+';margin-bottom:8px">'+(turn==='X'?'🐯 Dhruv':'🐼 Vedika')+'\'s Question</div>'+
+          '<div style="font-size:28px;font-weight:900;color:#111;margin-bottom:16px">'+q.question+'</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+          q.options.map(function(opt){
+            return '<button onclick="mathAnswer('+opt+')" style="border:2px solid #e5e7eb;border-radius:10px;padding:12px;font-size:16px;font-weight:800;background:#fff;cursor:pointer;transition:all .2s">'+opt+'</button>';
+          }).join('')+
+          '</div>'+
+        '</div>':
+        '<div style="text-align:center;background:#d1fae5;border-radius:14px;padding:20px;margin-bottom:10px">'+
+          '<div style="font-size:16px;font-weight:900;color:#065f46">'+
+            (scores.X>scores.O?'🏆 Dhruv wins! 🐯':scores.O>scores.X?'🏆 Vedika wins! 🐼':'🤝 It\'s a tie!')+
+          '</div>'+
+          '<div style="font-size:13px;color:#374151;margin-top:4px">Score: Dhruv '+scores.X+' - Vedika '+scores.O+' · +10🪙</div>'+
+          '<button onclick="buildMathChallenge(document.getElementById(\'game-content\'))" style="margin-top:8px;border:none;border-radius:50px;padding:8px 20px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Play Again!</button>'+
+        '</div>');
+    window.mathAnswer=function(val){
+      if(answered) return;
+      answered=true; round++;
+      if(val===q.answer) scores[turn]++;
+      turn=turn==='X'?'O':'X';
+      q=genQ(); answered=false;
+      render();
+    };
+  }
+  render();
+}
+
+// BUSINESS GAME
+function buildBusinessGame(gc){
+  var money=100, inventory={}, day=1, maxDays=7, coinsGiven=false;
+  var ITEMS=[
+    {id:'apple',name:'🍎 Apples',buyPrice:5,sellRange:[7,10],unit:'each'},
+    {id:'juice',name:'🥤 Juice',buyPrice:15,sellRange:[20,28],unit:'bottle'},
+    {id:'notebook',name:'📓 Notebook',buyPrice:20,sellRange:[25,35],unit:'each'},
+    {id:'candy',name:'🍬 Candy',buyPrice:3,sellRange:[4,6],unit:'pack'}
+  ];
+  var log=[];
+
+  function getRandSellPrice(item){
+    return item.sellRange[0]+Math.floor(Math.random()*(item.sellRange[1]-item.sellRange[0]+1));
+  }
+
+  function render(){
+    var profit=money-100;
+    var done=day>maxDays;
+    if(done&&!coinsGiven&&profit>0){coinsGiven=true;setTimeout(function(){awardKzCoins(20);},300);}
+    gc.innerHTML=
+      '<div style="background:linear-gradient(135deg,#92400e,#f59e0b);border-radius:12px;padding:12px;margin-bottom:10px;color:#fff">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<div><div style="font-size:11px;opacity:.8">Day '+day+'/'+maxDays+' · Your Money</div>'+
+          '<div style="font-size:24px;font-weight:900">₹'+money+'</div>'+
+          '<div style="font-size:11px;opacity:.8">'+(profit>=0?'Profit: +₹'+profit:'Loss: −₹'+Math.abs(profit))+'</div></div>'+
+          '<div style="font-size:32px">🏪</div>'+
+        '</div>'+
+      '</div>'+
+      (!done?
+        '<div style="margin-bottom:10px">'+
+          '<div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:6px">📦 BUY STOCK</div>'+
+          ITEMS.map(function(item){
+            var inv=inventory[item.id]||0;
+            return '<div style="background:#f9fafb;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">'+
+              '<div><div style="font-size:12px;font-weight:700">'+item.name+'</div>'+
+              '<div style="font-size:10px;color:#9ca3af">Buy: ₹'+item.buyPrice+' · In stock: '+inv+'</div></div>'+
+              '<div style="display:flex;gap:6px;align-items:center">'+
+                '<button onclick="buyItem(\''+item.id+'\')" style="border:none;border-radius:6px;padding:5px 10px;background:#059669;color:#fff;font-size:11px;font-weight:700;cursor:pointer">Buy</button>'+
+                (inv>0?'<button onclick="sellItem(\''+item.id+'\')" style="border:none;border-radius:6px;padding:5px 10px;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;cursor:pointer">Sell</button>':'<button style="border:none;border-radius:6px;padding:5px 10px;background:#e5e7eb;color:#9ca3af;font-size:11px;cursor:not-allowed">Sell</button>')+
+              '</div>'+
+            '</div>';
+          }).join('')+
+        '</div>'+
+        '<button onclick="nextDay()" style="width:100%;border:none;border-radius:50px;padding:11px;font-size:13px;font-weight:800;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;cursor:pointer">Next Day →</button>':
+        '<div style="background:#d1fae5;border-radius:12px;padding:16px;text-align:center;margin-bottom:10px">'+
+          '<div style="font-size:24px;margin-bottom:6px">'+(profit>50?'🏆':profit>0?'😊':'😔')+'</div>'+
+          '<div style="font-size:16px;font-weight:900;color:#065f46">Game Over!</div>'+
+          '<div style="font-size:13px;color:#374151;margin-top:4px">Started: ₹100 · Ended: ₹'+money+'<br>'+
+            '<strong>'+(profit>=0?'🎉 Profit of ₹'+profit+'! +20🪙':'😔 Loss of ₹'+Math.abs(profit)+'')+'</strong>'+
+          '</div>'+
+          '<button onclick="buildBusinessGame(document.getElementById(\'game-content\'))" style="margin-top:10px;border:none;border-radius:50px;padding:8px 20px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Try Again!</button>'+
+        '</div>')+
+      '<div style="margin-top:8px">'+
+        '<div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:4px">📋 Activity Log</div>'+
+        '<div style="max-height:80px;overflow-y:auto">'+
+        log.slice(-5).reverse().map(function(l){
+          return '<div style="font-size:10px;padding:3px 0;border-bottom:1px solid #f3f4f6;color:'+(l.type==='buy'?'#ef4444':l.type==='sell'?'#059669':'#374151')+'">'+l.text+'</div>';
+        }).join('')+
+        '</div>'+
+      '</div>';
+
+    window.buyItem=function(id){
+      var item=ITEMS.find(function(i){return i.id===id;});
+      if(money<item.buyPrice){showToast('Not enough money!');return;}
+      money-=item.buyPrice;
+      inventory[id]=(inventory[id]||0)+1;
+      log.push({type:'buy',text:'Day '+day+': Bought '+item.name+' for ₹'+item.buyPrice});
+      render();
+    };
+    window.sellItem=function(id){
+      var item=ITEMS.find(function(i){return i.id===id;});
+      if(!(inventory[id]>0)){showToast('No stock!');return;}
+      var sp=getRandSellPrice(item);
+      money+=sp;
+      inventory[id]--;
+      log.push({type:'sell',text:'Day '+day+': Sold '+item.name+' for ₹'+sp+' (profit ₹'+(sp-item.buyPrice)+')'});
+      render();
+    };
+    window.nextDay=function(){day++;render();};
+  }
+  render();
+}
+
+// DRAWING BOARD
+function buildDrawing(gc){
+  gc.innerHTML=
+    '<div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+      '<div style="font-size:11px;font-weight:700;color:#374151">Color:</div>'+
+      ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#000000','#ffffff'].map(function(c){
+        return '<div onclick="setColor(\''+c+'\')" style="width:24px;height:24px;border-radius:50%;background:'+c+';cursor:pointer;border:2px solid #e5e7eb;flex-shrink:0"></div>';
+      }).join('')+
+      '<div style="font-size:11px;font-weight:700;color:#374151;margin-left:4px">Size:</div>'+
+      ['4','8','14','20'].map(function(s){
+        return '<div onclick="setSize('+s+')" style="width:'+s+'px;height:'+s+'px;border-radius:50%;background:#374151;cursor:pointer;margin:auto 2px"></div>';
+      }).join('')+
+      '<button onclick="clearCanvas()" style="border:none;border-radius:50px;padding:4px 10px;background:#fee2e2;color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;margin-left:auto">Clear</button>'+
+    '</div>'+
+    '<canvas id="draw-canvas" width="340" height="260" style="border-radius:10px;border:2px solid #e5e7eb;cursor:crosshair;background:#fff;touch-action:none;width:100%;max-width:340px"></canvas>'+
+    '<div style="text-align:center;margin-top:8px;font-size:11px;color:#9ca3af">Draw together! 🎨 Dhruv & Vedika</div>';
+
+  var canvas=document.getElementById('draw-canvas');
+  var ctx=canvas.getContext('2d');
+  var drawing=false, color='#000000', size=6;
+
+  function getPos(e){
+    var r=canvas.getBoundingClientRect();
+    var scaleX=canvas.width/r.width, scaleY=canvas.height/r.height;
+    var cx=e.touches?e.touches[0].clientX:e.clientX;
+    var cy=e.touches?e.touches[0].clientY:e.clientY;
+    return{x:(cx-r.left)*scaleX,y:(cy-r.top)*scaleY};
+  }
+  canvas.addEventListener('mousedown',function(e){drawing=true;var p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle=color;ctx.lineWidth=size;ctx.lineCap='round';ctx.stroke();});
+  canvas.addEventListener('mouseup',function(){drawing=false;});
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle=color;ctx.lineWidth=size;ctx.lineCap='round';ctx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',function(){drawing=false;});
+
+  window.setColor=function(c){color=c;};
+  window.setSize=function(s){size=s;};
+  window.clearCanvas=function(){ctx.clearRect(0,0,canvas.width,canvas.height);};
+}
+
+// SPIN WHEEL WITH QUESTIONS
+function buildSpinWheel(gc){
+  var PRIZES=[
+    {label:'10🪙',coins:10,color:'#7c3aed'},
+    {label:'Q+5🪙',coins:5,color:'#3b82f6',hasQ:true},
+    {label:'20🪙',coins:20,color:'#059669'},
+    {label:'Q+10🪙',coins:10,color:'#ec4899',hasQ:true},
+    {label:'5🪙',coins:5,color:'#f59e0b'},
+    {label:'Q+15🪙',coins:15,color:'#ef4444',hasQ:true},
+    {label:'30🪙',coins:30,color:'#0ea5e9'},
+    {label:'Q+5🪙',coins:5,color:'#8b5cf6',hasQ:true}
+  ];
+  var QUESTIONS=[
+    {q:'What is 12 × 8?',a:'96',opts:['72','96','88','104']},
+    {q:'Capital of India?',a:'New Delhi',opts:['Mumbai','New Delhi','Kolkata','Chennai']},
+    {q:'How many days in a leap year?',a:'366',opts:['365','366','367','364']},
+    {q:'Which is the largest ocean?',a:'Pacific',opts:['Atlantic','Indian','Arctic','Pacific']},
+    {q:'What is 144 ÷ 12?',a:'12',opts:['10','11','12','13']},
+    {q:'National animal of India?',a:'Tiger',opts:['Lion','Elephant','Tiger','Leopard']}
+  ];
+  var spinning=false,coinsGiven=0,currentQ=null,angle=0;
+
+  function drawWheel(rot){
+    var canvas=document.getElementById('sw-canvas');
+    if(!canvas)return;
+    var ctx=canvas.getContext('2d'),cx=110,cy=110,r=105,arc=(2*Math.PI)/PRIZES.length;
+    ctx.clearRect(0,0,220,220);
+    PRIZES.forEach(function(p,i){
+      var start=rot+i*arc-Math.PI/2,end=start+arc;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+      ctx.fillStyle=p.color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
+      ctx.textAlign='right';ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+      ctx.fillText(p.label,r-8,4);ctx.restore();
+    });
+    ctx.beginPath();ctx.arc(cx,cy,16,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+    ctx.fillStyle='#7c3aed';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.fillText('SPIN',cx,cy+3);
+  }
+
+  function render(){
+    gc.innerHTML=
+      '<div style="text-align:center;margin-bottom:10px;font-size:12px;font-weight:700;color:#374151">Coins earned today: <span style="color:#7c3aed">'+coinsGiven+'🪙</span></div>'+
+      '<div style="position:relative;width:220px;height:220px;margin:0 auto 14px">'+
+        '<canvas id="sw-canvas" width="220" height="220"></canvas>'+
+        '<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:26px">▼</div>'+
+      '</div>'+
+      '<button onclick="doSpin()" id="sw-btn" style="width:100%;border:none;border-radius:50px;padding:12px;font-size:14px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;cursor:pointer">🎰 SPIN!</button>'+
+      '<div id="sw-question" style="display:none;margin-top:12px"></div>';
+    setTimeout(function(){drawWheel(angle);},50);
+    window.doSpin=function(){
+      if(spinning)return;
+      spinning=true;
+      document.getElementById('sw-btn').disabled=true;
+      var prizeIdx=Math.floor(Math.random()*PRIZES.length);
+      var arc=(2*Math.PI)/PRIZES.length;
+      var targetAngle=-(prizeIdx*arc)-arc/2-(Math.PI*2*6);
+      var start=null,duration=3500,startAngle=angle;
+      function animate(ts){
+        if(!start)start=ts;
+        var p=Math.min((ts-start)/duration,1);
+        var ease=1-Math.pow(1-p,3);
+        angle=startAngle+(targetAngle-startAngle)*ease;
+        drawWheel(angle);
+        if(p<1){requestAnimationFrame(animate);}
+        else{
+          var prize=PRIZES[prizeIdx];
+          spinning=false;
+          if(prize.hasQ){showQuestion(prize);}
+          else{awardKzCoins(prize.coins);coinsGiven+=prize.coins;showToast('🎉 Won '+prize.coins+'🪙!');document.getElementById('sw-btn').disabled=false;}
+        }
+      }
+      requestAnimationFrame(animate);
+    };
+  }
+
+  function showQuestion(prize){
+    var q=QUESTIONS[Math.floor(Math.random()*QUESTIONS.length)];
+    currentQ=q;
+    var qEl=document.getElementById('sw-question');
+    if(!qEl)return;
+    qEl.style.display='block';
+    qEl.innerHTML=
+      '<div style="background:#ede9fe;border-radius:12px;padding:12px;border:2px solid #7c3aed">'+
+        '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px">❓ Answer correctly to win '+prize.coins+'🪙 bonus!</div>'+
+        '<div style="font-size:13px;font-weight:800;color:#111;margin-bottom:10px">'+q.q+'</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        q.opts.map(function(opt){
+          return '<button onclick="checkSWAnswer(\''+opt+'\',\''+q.a+'\','+prize.coins+')" style="border:2px solid #e5e7eb;border-radius:8px;padding:8px;font-size:12px;font-weight:700;background:#fff;cursor:pointer">'+opt+'</button>';
+        }).join('')+
+        '</div>'+
+      '</div>';
+    window.checkSWAnswer=function(selected,correct,coins){
+      var qEl=document.getElementById('sw-question');
+      if(selected===correct){
+        awardKzCoins(coins);coinsGiven+=coins;
+        showToast('✅ Correct! +'+coins+'🪙');
+        if(qEl)qEl.innerHTML='<div style="background:#d1fae5;border-radius:10px;padding:10px;text-align:center;font-weight:700;color:#065f46">✅ Correct! +'+coins+'🪙 earned!</div>';
+      } else {
+        showToast('❌ Wrong! The answer was: '+correct);
+        if(qEl)qEl.innerHTML='<div style="background:#fee2e2;border-radius:10px;padding:10px;text-align:center;font-weight:700;color:#991b1b">❌ Wrong! Answer: '+correct+'</div>';
+      }
+      setTimeout(function(){if(qEl)qEl.style.display='none';document.getElementById('sw-btn').disabled=false;},2000);
+    };
+  }
+  render();
+}
+
+// Update startGame to include new games
+var _origStartGame = startGame;
+function startGame(game){
+  if(kzSecondsLeft<=0){showTimeUp();return;}
+  currentGame=game;
+  document.getElementById('kids-game-menu').style.display='none';
+  document.getElementById('kids-game-area').style.display='block';
+  var titles={
+    memory:'🃏 Memory Cards (+10🪙)',puzzle:'🧩 Number Puzzle (+15🪙)',
+    wordsearch:'🔤 Word Search (+20🪙)',tictactoe:'⭕ Tic Tac Toe (+5🪙)',
+    snakeladder:'🐍 Snake & Ladder (+15🪙)',mathchallenge:'➕ Math Challenge (+10🪙)',
+    business:'🏪 Business Game (+20🪙)',drawing:'🎨 Drawing Board',
+    spinwheel:'🎰 Quiz Spin (+15🪙)'
+  };
+  document.getElementById('game-title').textContent=titles[game]||game;
+  var ci=document.getElementById('game-coin-indicator');
+  if(ci)ci.textContent=kzTodayCoins+'/'+KZ_MAX_COINS+' 🪙 today';
+  startKzTimer();
+  var gc=document.getElementById('game-content');
+  if(game==='memory')buildMemoryGame(gc);
+  else if(game==='puzzle')buildPuzzleGame(gc);
+  else if(game==='wordsearch')buildWordSearch(gc);
+  else if(game==='tictactoe')buildTicTacToe(gc);
+  else if(game==='snakeladder')buildSnakeLadder(gc);
+  else if(game==='mathchallenge')buildMathChallenge(gc);
+  else if(game==='business')buildBusinessGame(gc);
+  else if(game==='drawing')buildDrawing(gc);
+  else if(game==='spinwheel')buildSpinWheel(gc);
+}
+
+// ══ UPDATE RENDER TO INCLUDE NEW SECTIONS ══
+var _origRender = render;
+function render(){
+  if(!data||!document.getElementById('screen-app').classList.contains('active'))return;
+  renderKidCards();renderDays();renderTasks();renderGoal();renderSummary();
+  renderLevel();renderBadges();renderComments();renderStatementPreview();
+  var colors={dhruv:'var(--blue)',vedika:'var(--pink)'};
+  document.getElementById('tasks-head').style.background=colors[selectedKid];
+  document.getElementById('tasks-title').textContent=selectedKid==='dhruv'?"Dhruv's Tasks":"Vedika's Tasks";
 }
 
 // Register Service Worker for PWA
