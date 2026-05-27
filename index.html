@@ -505,7 +505,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <!-- Transaction list -->
       <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px">Transaction History</div>
-      <div id="stmt-transactions" style="max-height:360px;overflow-y:auto"></div>
+      <div id="stmt-transactions" style="max-height:300px;overflow-y:auto"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+        <button onclick="downloadStatementPDF()" style="border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;background:#7c3aed;color:#fff;cursor:pointer">📄 Download PDF</button>
+        <button onclick="downloadStatementExcel()" style="border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;background:#059669;color:#fff;cursor:pointer">📊 Download Excel</button>
+      </div>
     </div>
   </div>
 
@@ -894,6 +898,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="input-group"><label>Linked kid (for child accounts)</label>
       <select id="add-user-linked"><option value="">None</option><option value="dhruv">Dhruv</option><option value="vedika">Vedika</option></select>
     </div>
+    <div class="input-group"><label>Date of Birth (optional — for birthday surprise! 🎂)</label>
+      <input type="date" id="add-user-dob" placeholder="DD/MM/YYYY">
+    </div>
     <div id="add-user-err" style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:7px 10px;font-size:12px;margin-bottom:8px;display:none"></div>
     <div class="modal-btns"><button class="btn btn-outline" onclick="closeModal('modal-add-user')">Cancel</button><button class="btn btn-purple" onclick="createUser()">Create Account</button></div>
   </div>
@@ -939,7 +946,7 @@ loadFirebase(function(){
         db.collection('users').doc(user.uid).get().then(function(doc){
           if(doc.exists){currentUserProfile=doc.data();}
           else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
-          loadAppData(function(){showScreen('app');applyRolePermissions();render();});
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
         }).catch(function(){showScreen('login');showErr('Could not load profile. Try again.');});
       } else {
         currentUser=null;currentUserProfile=null;showScreen('login');
@@ -954,7 +961,7 @@ loadFirebase(function(){
         db.collection('users').doc(user.uid).get().then(function(doc){
           if(doc.exists){currentUserProfile=doc.data();}
           else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
-          loadAppData(function(){showScreen('app');applyRolePermissions();render();});
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
         }).catch(function(){showScreen('login');});
       } else {currentUser=null;currentUserProfile=null;showScreen('login');}
     });
@@ -1186,6 +1193,7 @@ function showUserMenu(){
     '</div>'+
     // Action buttons
     '<button id="btn-change-photo" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;text-align:left">📷 Change Profile Photo</button>'+
+    '<button id="btn-set-dob" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fef3c7;color:#92400e;cursor:pointer;margin-bottom:8px;text-align:left">🎂 Set Birthday Date '+(p.dob?'('+new Date(p.dob).toLocaleDateString('en-IN',{day:'numeric',month:'long'})+'✅)':'')+'</button>'+
     '<button id="btn-reset-pw" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#dbeafe;color:#1d4ed8;cursor:pointer;margin-bottom:8px;text-align:left">🔑 Change Password</button>'+
     '<button id="btn-sign-out" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:pointer;margin-bottom:8px;text-align:left">🚪 Sign Out</button>'+
     '<button id="btn-close-menu" style="width:100%;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;background:#f3f4f6;color:#374151;cursor:pointer;text-align:left">✕ Close</button>'+
@@ -1199,6 +1207,17 @@ function showUserMenu(){
   }
   m.querySelector('#avatar-wrap').onclick = triggerPhotoUpload;
   m.querySelector('#btn-change-photo').onclick = triggerPhotoUpload;
+  m.querySelector('#btn-set-dob').onclick = function(){
+    var current = p.dob||'';
+    var newDob = prompt('Enter date of birth (YYYY-MM-DD format):\ne.g. 2014-03-15', current);
+    if(newDob===null) return;
+    if(newDob && !/^\d{4}-\d{2}-\d{2}$/.test(newDob)){showToast('Please use YYYY-MM-DD format!');return;}
+    db.collection('users').doc(currentUser.uid).update({dob:newDob}).then(function(){
+      currentUserProfile.dob=newDob;
+      showToast('Birthday saved! 🎂');
+      m.remove();
+    });
+  };
   m.querySelector('#avatar-file-input').onchange = function(e){
     var file = e.target.files[0]; if(!file) return;
     var reader = new FileReader();
@@ -1265,6 +1284,7 @@ function renderUsersList(){
 function openAddUserModal(){
   ['add-user-name','add-user-email','add-user-password'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('add-user-role').value='parent';
+  document.getElementById('add-user-dob').value='';
   document.getElementById('add-user-err').style.display='none';
   document.getElementById('modal-add-user').classList.remove('hidden');
 }
@@ -1281,8 +1301,9 @@ function createUser(){
   if(pass.length<6){errEl.textContent='Password min 6 chars';errEl.style.display='block';return;}
   var secondary;
   try{secondary=firebase.app('secondary');}catch(e){secondary=firebase.initializeApp(firebaseConfig,'secondary');}
+  var dob = document.getElementById('add-user-dob').value||'';
   secondary.auth().createUserWithEmailAndPassword(email,pass).then(function(cred){
-    return db.collection('users').doc(cred.user.uid).set({name:name,email:email,role:role,avatar:avatar,linkedKid:linked,createdAt:new Date().toISOString(),createdBy:currentUser.uid,savedPassword:pass});
+    return db.collection('users').doc(cred.user.uid).set({name:name,email:email,role:role,avatar:avatar,linkedKid:linked,dob:dob,createdAt:new Date().toISOString(),createdBy:currentUser.uid,savedPassword:pass});
   }).then(function(){secondary.auth().signOut();closeModal('modal-add-user');showToast('Account created for '+name+'! ✅');renderUsersList();})
   .catch(function(e){errEl.textContent=e.message;errEl.style.display='block';});
 }
@@ -4400,6 +4421,261 @@ function render(){
   var colors={dhruv:'var(--blue)',vedika:'var(--pink)'};
   document.getElementById('tasks-head').style.background=colors[selectedKid];
   document.getElementById('tasks-title').textContent=selectedKid==='dhruv'?"Dhruv's Tasks":"Vedika's Tasks";
+}
+
+// ══════════════════════════════════════
+// BIRTHDAY GREETING CARD
+// ══════════════════════════════════════
+function checkBirthday(){
+  var p = currentUserProfile||{};
+  if(!p.dob) return;
+  var today = new Date();
+  var dob = new Date(p.dob);
+  // Check if today is their birthday (same day and month)
+  if(dob.getDate()===today.getDate() && dob.getMonth()===today.getMonth()){
+    var age = today.getFullYear() - dob.getFullYear();
+    // Only show once per session
+    if(sessionStorage.getItem('bday_shown_'+currentUser.uid)) return;
+    sessionStorage.setItem('bday_shown_'+currentUser.uid,'1');
+    setTimeout(function(){ showBirthdayCard(p, age); }, 800);
+  }
+}
+
+function showBirthdayCard(p, age){
+  var isKid = p.role==='child';
+  var color = p.linkedKid==='dhruv'?'#3b82f6':p.linkedKid==='vedika'?'#ec4899':'#7c3aed';
+  var emoji = p.avatar||'🎂';
+  var name = p.name||'Champion';
+
+  // Confetti burst
+  var colors=['#f59e0b','#ef4444','#3b82f6','#ec4899','#059669','#7c3aed','#fbbf24'];
+  for(var i=0;i<30;i++){
+    (function(idx){
+      setTimeout(function(){
+        var c=document.createElement('div');
+        c.style.cssText='position:fixed;pointer-events:none;z-index:600;border-radius:2px;animation:confetti 1.2s ease forwards;';
+        c.style.width=Math.random()*10+6+'px';
+        c.style.height=Math.random()*10+6+'px';
+        c.style.left=Math.random()*window.innerWidth+'px';
+        c.style.top='-20px';
+        c.style.background=colors[idx%colors.length];
+        c.style.animationDelay=(Math.random()*0.5)+'s';
+        document.body.appendChild(c);
+        setTimeout(function(){c.remove();},1800);
+      },idx*60);
+    })(i);
+  }
+
+  var card = document.createElement('div');
+  card.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';
+  card.innerHTML=
+    '<div style="background:#fff;border-radius:24px;padding:0;width:100%;max-width:360px;overflow:hidden;animation:pop .4s ease;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+
+      // Header
+      '<div style="background:linear-gradient(135deg,'+color+',#f59e0b);padding:30px 20px;text-align:center;position:relative;overflow:hidden">'+
+        '<div style="font-size:14px;font-weight:800;color:rgba(255,255,255,.85);margin-bottom:6px;letter-spacing:1px">🎉 HAPPY BIRTHDAY 🎉</div>'+
+        '<div style="font-size:70px;margin-bottom:8px;animation:bob 1s ease-in-out infinite">'+emoji+'</div>'+
+        '<div style="font-size:28px;font-weight:900;color:#fff">'+name+'!</div>'+
+        '<div style="font-size:16px;color:rgba(255,255,255,.9);margin-top:4px">You are '+age+' years old today! 🥳</div>'+
+        // Decorative circles
+        '<div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.15)"></div>'+
+        '<div style="position:absolute;bottom:-30px;left:-10px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.1)"></div>'+
+      '</div>'+
+      // Body
+      '<div style="padding:20px;text-align:center">'+
+        '<div style="font-size:32px;margin-bottom:12px">🎂🎈🎁🌟🎊</div>'+
+        '<div style="font-size:14px;color:#374151;line-height:1.7;margin-bottom:16px">'+
+          (isKid?
+            'Wishing you a day filled with<br>joy, laughter and cake! 🍰<br><br>'+
+            '<span style="font-weight:700;color:'+color+'">Keep being a Champion!</span><br>'+
+            'Mummy & Papa love you so much! ❤️':
+            'Wishing you a wonderful day<br>filled with happiness! 🌟<br><br>'+
+            '<span style="font-weight:700;color:'+color+'">Have a fantastic birthday!</span>'+
+          ')+'</div>'+
+        // Birthday bonus message for kids
+        (isKid?'<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:12px;margin-bottom:14px;border:2px solid #f59e0b">'+
+          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px">🎁 BIRTHDAY BONUS!</div>'+
+          '<div style="font-size:20px;font-weight:900;color:#92400e">+50 🪙 Birthday Coins!</div>'+
+          '<div style="font-size:10px;color:#92400e;margin-top:2px">Added to your wallet!</div>'+
+        '</div>':'')+
+        '<button onclick="this.closest(\'div\').parentElement.parentElement.remove()" style="width:100%;border:none;border-radius:50px;padding:13px;font-size:14px;font-weight:800;background:linear-gradient(135deg,'+color+',#f59e0b);color:#fff;cursor:pointer">🎉 Thank You! 🎉</button>'+
+      '</div>'+
+    '</div>';
+
+  // Give birthday bonus coins to kids
+  if(isKid){
+    var uid = currentUser&&currentUser.uid;
+    db.collection('wallets').doc(uid).get().then(function(doc){
+      var current = doc.exists?(doc.data().coins||0):0;
+      // Only give once per birthday (check if already given this year)
+      var lastBday = doc.exists?(doc.data().lastBdayYear||0):0;
+      var thisYear = new Date().getFullYear();
+      if(lastBday!==thisYear){
+        db.collection('wallets').doc(uid).set({
+          coins:current+50,
+          lastBdayYear:thisYear
+        },{merge:true});
+      }
+    });
+  }
+
+  card.addEventListener('click',function(e){if(e.target===card)card.remove();});
+  document.body.appendChild(card);
+}
+
+// ══════════════════════════════════════
+// STATEMENT PDF & EXCEL DOWNLOAD
+// ══════════════════════════════════════
+function getStatementTransactions(kid){
+  if(!data) return [];
+  var transactions=[];
+  var allTasks=[].concat(data.tasks.vacation||[],data.tasks.school||[]);
+  var allChecks=data.checks[kid]||{};
+  var dateMap={};
+  Object.keys(allChecks).forEach(function(key){
+    var parts=key.split('_');
+    if(parts.length<3) return;
+    var dateStr=parts[parts.length-1];
+    var ch=allChecks[key];
+    var earned=0;
+    allTasks.forEach(function(t){if(ch[t.id])earned+=t.amount;});
+    if(earned>0){if(!dateMap[dateStr])dateMap[dateStr]=0;dateMap[dateStr]+=earned;}
+  });
+  Object.keys(dateMap).sort().reverse().forEach(function(dateStr){
+    var parts=dateStr.split('-');
+    var d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    transactions.push({type:'earned',amount:dateStr,credit:dateMap[dateStr],debit:0,date:d,label:'Tasks completed',dateStr:d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})});
+  });
+  (data.bonuses&&data.bonuses[kid]||[]).forEach(function(b){
+    transactions.push({type:'bonus',credit:b.amount,debit:0,date:new Date(b.date||Date.now()),label:'Bonus: '+(b.reason||'Reward'),dateStr:b.date||new Date().toLocaleDateString('en-IN')});
+  });
+  var spent=data.spent&&data.spent[kid]||0;
+  if(spent>0) transactions.push({type:'spent',credit:0,debit:spent,date:new Date(),label:'Spending',dateStr:new Date().toLocaleDateString('en-IN')});
+  transactions.sort(function(a,b){return b.date-a.date;});
+  return transactions;
+}
+
+function downloadStatementPDF(){
+  var kid=statementKid;
+  var name=kid==='dhruv'?'Dhruv':'Vedika';
+  var transactions=getStatementTransactions(kid);
+  var totalEarned=transactions.reduce(function(s,t){return s+(t.credit||0);},0);
+  var totalSpent=transactions.reduce(function(s,t){return s+(t.debit||0);},0);
+  var balance=totalEarned-totalSpent;
+
+  function ls(src,cb){if(document.querySelector('script[src="'+src+'"]')){cb();return;}var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}
+  ls('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){
+    var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var pageW=doc.internal.pageSize.getWidth();
+
+    // Header
+    doc.setFillColor(29,78,216);
+    doc.rect(0,0,pageW,40,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(20);doc.setFont('helvetica','bold');
+    doc.text('Journey of Champions',pageW/2,15,{align:'center'});
+    doc.setFontSize(13);doc.setFont('helvetica','normal');
+    doc.text(name+'\'s Earnings Statement',pageW/2,24,{align:'center'});
+    doc.setFontSize(10);
+    doc.text('Generated: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),pageW/2,32,{align:'center'});
+
+    // Summary boxes
+    doc.setTextColor(0,0,0);
+    var boxY=48, boxW=55, boxH=20, gap=7, startX=14;
+    [[totalEarned,'Total Earned','#dcfce7','#059669'],[totalSpent,'Total Spent','#fee2e2','#ef4444'],[balance,'Balance','#dbeafe','#1d4ed8']].forEach(function(b,i){
+      var x=startX+i*(boxW+gap);
+      doc.setFillColor(b[2].replace('#',''));
+      doc.roundedRect(x,boxY,boxW,boxH,3,3,'F');
+      doc.setTextColor(b[3].replace('#',''));
+      doc.setFontSize(14);doc.setFont('helvetica','bold');
+      doc.text('Rs.'+b[0],x+boxW/2,boxY+10,{align:'center'});
+      doc.setFontSize(8);doc.setFont('helvetica','normal');
+      doc.text(b[1],x+boxW/2,boxY+16,{align:'center'});
+    });
+
+    // Table header
+    var tableY=78;
+    doc.setFillColor(59,130,246);
+    doc.rect(14,tableY,pageW-28,8,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(9);doc.setFont('helvetica','bold');
+    doc.text('Date',18,tableY+5.5);
+    doc.text('Description',55,tableY+5.5);
+    doc.text('Credit',130,tableY+5.5);
+    doc.text('Debit',155,tableY+5.5);
+    doc.text('Type',175,tableY+5.5);
+
+    // Rows
+    var y=tableY+10;
+    doc.setFont('helvetica','normal');
+    transactions.forEach(function(t,i){
+      if(y>270){doc.addPage();y=20;}
+      if(i%2===0){doc.setFillColor(249,250,251);doc.rect(14,y-4,pageW-28,8,'F');}
+      doc.setTextColor(55,65,81);
+      doc.setFontSize(8);
+      doc.text(t.dateStr||'',18,y);
+      doc.text(t.label.substring(0,30),55,y);
+      if(t.credit>0){doc.setTextColor(5,150,105);doc.text('+Rs.'+t.credit,130,y);}
+      if(t.debit>0){doc.setTextColor(239,68,68);doc.text('-Rs.'+t.debit,155,y);}
+      doc.setTextColor(107,114,128);
+      doc.text(t.type,175,y);
+      y+=8;
+    });
+
+    // Footer
+    doc.setTextColor(156,163,175);
+    doc.setFontSize(8);
+    doc.text('Journey of Champions — '+name+'\'s Statement — '+new Date().toLocaleDateString('en-IN'),pageW/2,285,{align:'center'});
+
+    doc.save('JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.pdf');
+    showToast('📄 PDF downloaded!');
+  });
+}
+
+function downloadStatementExcel(){
+  var kid=statementKid;
+  var name=kid==='dhruv'?'Dhruv':'Vedika';
+  var transactions=getStatementTransactions(kid);
+  var totalEarned=transactions.reduce(function(s,t){return s+(t.credit||0);},0);
+  var totalSpent=transactions.reduce(function(s,t){return s+(t.debit||0);},0);
+  var balance=totalEarned-totalSpent;
+
+  // Build CSV content (works as Excel)
+  var rows=[
+    ['Journey of Champions — '+name+'\'s Earnings Statement'],
+    ['Generated:',new Date().toLocaleDateString('en-IN')],
+    [''],
+    ['SUMMARY','',''],
+    ['Total Earned','Total Spent','Balance'],
+    ['Rs.'+totalEarned,'Rs.'+totalSpent,'Rs.'+balance],
+    [''],
+    ['TRANSACTION HISTORY'],
+    ['Date','Description','Credit (Rs.)','Debit (Rs.)','Type']
+  ];
+  transactions.forEach(function(t){
+    rows.push([t.dateStr||'',t.label,t.credit||'',t.debit||'',t.type]);
+  });
+  rows.push(['']);
+  rows.push(['Journey of Champions — Jaipur, India']);
+
+  var csv=rows.map(function(row){
+    return row.map(function(cell){
+      var str=String(cell||'');
+      if(str.indexOf(',')>-1||str.indexOf('"')>-1||str.indexOf('\n')>-1){
+        str='"'+str.replace(/"/g,'""')+'"';
+      }
+      return str;
+    }).join(',');
+  }).join('\n');
+
+  // Add BOM for Excel to handle UTF-8
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='JOC_Statement_'+name+'_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📊 Excel file downloaded!');
 }
 
 // Register Service Worker for PWA
