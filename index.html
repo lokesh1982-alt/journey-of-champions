@@ -24,14 +24,7 @@
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json">
 
-<!-- Firebase — preload for faster startup -->
-<link rel="preload" href="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" as="script">
-<link rel="preload" href="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" as="script">
-<link rel="preload" href="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" as="script">
-<!-- Load Firebase directly in head — faster than dynamic loading -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 
 <!-- Splash screen color -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -978,8 +971,19 @@ var db, auth, currentUser, currentUserProfile, dataLoaded=false;
 var data = null;
 
 function loadFirebase(cb){
-  
-  cb();
+  var loaded=0;
+  var srcs=[
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'
+  ];
+  srcs.forEach(function(src){
+    var s=document.createElement('script');
+    s.src=src;
+    s.onload=function(){loaded++;if(loaded===srcs.length)cb();};
+    s.onerror=function(){loaded++;if(loaded===srcs.length)cb();};
+    document.head.appendChild(s);
+  });
 }
 
 function showForgotForm(show){
