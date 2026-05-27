@@ -253,10 +253,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="spinner"></div>
     <div style="font-size:14px;color:#6b7280;font-weight:700">Journey of Champions</div>
     <div style="font-size:11px;color:#9ca3af;margin-top:4px" id="loading-msg">Starting up...</div>
-    <div id="loading-slow-msg" style="display:none;margin-top:16px;text-align:center">
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Slow connection? Try again:</div>
-      <button onclick="location.reload()" style="border:none;border-radius:50px;padding:8px 20px;background:#6d28d9;color:#fff;font-size:12px;font-weight:700;cursor:pointer">🔄 Retry</button>
-    </div>
+    <div id="loading-slow-msg" style="display:none;margin-top:10px"><button onclick="location.reload()" style="border:none;border-radius:50px;padding:8px 20px;background:#6d28d9;color:#fff;font-size:12px;font-weight:700;cursor:pointer">🔄 Retry</button></div>
   </div>
 </div>
 
@@ -995,66 +992,35 @@ function showForgotForm(show){
 }
 
 loadFirebase(function(){
-  var lm = document.getElementById('loading-msg');
-  if(lm) lm.textContent = 'Connecting...';
-
-  // Start timeout immediately so app never gets stuck
-  loadingTimer = setTimeout(function(){
-    var slowMsg = document.getElementById('loading-slow-msg');
-    if(slowMsg) slowMsg.style.display='block';
-    if(lm) lm.textContent = 'Taking longer than usual...';
-  }, 6000);
-
-  var hardTimer = setTimeout(function(){
-    if(document.getElementById('screen-loading').classList.contains('active')){
-      showScreen('login');
-    }
-  }, 15000);
-
-  try{
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    auth = firebase.auth();
-  } catch(e){
-    clearTimeout(hardTimer);
-    showScreen('login');
-    return;
-  }
-
-  if(lm) lm.textContent = 'Checking login...';
-
-  function initAuth(){
+  firebase.initializeApp(firebaseConfig);
+  db=firebase.firestore();
+  auth=firebase.auth();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function(){
     auth.onAuthStateChanged(function(user){
       clearTimeout(loadingTimer);
-      clearTimeout(hardTimer);
       if(user){
-        currentUser = user;
-        if(lm) lm.textContent = 'Loading your data...';
+        currentUser=user;
         db.collection('users').doc(user.uid).get().then(function(doc){
-          if(doc.exists){ currentUserProfile = doc.data(); }
-          else{
-            currentUserProfile = {name:user.email,role:'admin',avatar:'👑',linkedKid:''};
-            db.collection('users').doc(user.uid).set(currentUserProfile);
-          }
-          showScreen('app');
-          applyRolePermissions();
-          loadAppData(function(){ render(); setTimeout(checkBirthday, 1500); });
-        }).catch(function(){ showScreen('login'); });
-      } else {
-        currentUser = null;
-        currentUserProfile = null;
-        showScreen('login');
-      }
+          if(doc.exists){currentUserProfile=doc.data();}
+          else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
+        }).catch(function(){showScreen('login');});
+      } else {currentUser=null;currentUserProfile=null;showScreen('login');}
     });
-  }
-
-  // Try setting persistence, fall back gracefully
-  try{
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-      .then(initAuth).catch(initAuth);
-  } catch(e){ initAuth(); }
+  }).catch(function(){
+    auth.onAuthStateChanged(function(user){
+      clearTimeout(loadingTimer);
+      if(user){
+        currentUser=user;
+        db.collection('users').doc(user.uid).get().then(function(doc){
+          if(doc.exists){currentUserProfile=doc.data();}
+          else{currentUserProfile={name:user.email,role:'admin',avatar:'👑',linkedKid:''};db.collection('users').doc(user.uid).set(currentUserProfile);}
+          loadAppData(function(){showScreen('app');applyRolePermissions();render();setTimeout(checkBirthday,1500);});
+        }).catch(function(){showScreen('login');});
+      } else {currentUser=null;currentUserProfile=null;showScreen('login');}
+    });
+  });
 });
-
 
 
 function showScreen(n){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-'+n).classList.add('active');}
@@ -1062,19 +1028,9 @@ function showScreen(n){document.querySelectorAll('.screen').forEach(function(s){
 var loadingTimer=null;
 function startLoadingTimeout(){
   clearTimeout(loadingTimer);
-  // Show retry button after 6 seconds
-  setTimeout(function(){
-    var slowMsg=document.getElementById('loading-slow-msg');
-    if(slowMsg&&document.getElementById('screen-loading').classList.contains('active')){
-      slowMsg.style.display='block';
-    }
-  },6000);
-  // Hard timeout after 15 seconds
   loadingTimer=setTimeout(function(){
-    if(document.getElementById('screen-loading').classList.contains('active')){
-      showScreen('login');
-      showErr('Connection timeout. Check internet and try again.');
-    }
+    showScreen('login');
+    showErr('Connection timeout. Check internet and try again.');
   },15000);
 }
 
