@@ -993,18 +993,39 @@ function showForgotForm(show){
 loadFirebase(function(){
   var lm = document.getElementById('loading-msg');
   if(lm) lm.textContent = 'Connecting...';
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  auth = firebase.auth();
+
+  // Start timeout immediately so app never gets stuck
+  loadingTimer = setTimeout(function(){
+    var slowMsg = document.getElementById('loading-slow-msg');
+    if(slowMsg) slowMsg.style.display='block';
+    if(lm) lm.textContent = 'Taking longer than usual...';
+  }, 6000);
+
+  var hardTimer = setTimeout(function(){
+    if(document.getElementById('screen-loading').classList.contains('active')){
+      showScreen('login');
+    }
+  }, 15000);
+
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    auth = firebase.auth();
+  } catch(e){
+    clearTimeout(hardTimer);
+    showScreen('login');
+    return;
+  }
+
   if(lm) lm.textContent = 'Checking login...';
 
   function initAuth(){
     auth.onAuthStateChanged(function(user){
       clearTimeout(loadingTimer);
+      clearTimeout(hardTimer);
       if(user){
         currentUser = user;
-        var lm2 = document.getElementById('loading-msg');
-        if(lm2) lm2.textContent = 'Loading your data...';
+        if(lm) lm.textContent = 'Loading your data...';
         db.collection('users').doc(user.uid).get().then(function(doc){
           if(doc.exists){ currentUserProfile = doc.data(); }
           else{
@@ -1014,7 +1035,7 @@ loadFirebase(function(){
           showScreen('app');
           applyRolePermissions();
           loadAppData(function(){ render(); setTimeout(checkBirthday, 1500); });
-        }).catch(function(){ showScreen('login'); showErr('Could not load profile. Try again.'); });
+        }).catch(function(){ showScreen('login'); });
       } else {
         currentUser = null;
         currentUserProfile = null;
@@ -1023,11 +1044,13 @@ loadFirebase(function(){
     });
   }
 
-  // Set persistence then start auth
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    .then(initAuth)
-    .catch(initAuth); // If persistence fails, still start normally
+  // Try setting persistence, fall back gracefully
+  try{
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(initAuth).catch(initAuth);
+  } catch(e){ initAuth(); }
 });
+
 
 
 function showScreen(n){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-'+n).classList.add('active');}
