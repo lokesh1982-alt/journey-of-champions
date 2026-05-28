@@ -4439,80 +4439,19 @@ function showBirthdayCard(p, age){
   var color = p.linkedKid==='dhruv'?'#3b82f6':p.linkedKid==='vedika'?'#ec4899':'#7c3aed';
   var emoji = p.avatar||'🎂';
   var name = p.name||'Champion';
-
-  
-  var colors=['#f59e0b','#ef4444','#3b82f6','#ec4899','#059669','#7c3aed','#fbbf24'];
-  for(var i=0;i<30;i++){
-    (function(idx){
-      setTimeout(function(){
-        var c=document.createElement('div');
-        c.style.cssText='position:fixed;pointer-events:none;z-index:600;border-radius:2px;animation:confetti 1.2s ease forwards;';
-        c.style.width=Math.random()*10+6+'px';
-        c.style.height=Math.random()*10+6+'px';
-        c.style.left=Math.random()*window.innerWidth+'px';
-        c.style.top='-20px';
-        c.style.background=colors[idx%colors.length];
-        c.style.animationDelay=(Math.random()*0.5)+'s';
-        document.body.appendChild(c);
-        setTimeout(function(){c.remove();},1800);
-      },idx*60);
-    })(i);
-  }
-
-  var card = document.createElement('div');
+  var msg = isKid ? 'Wishing you a day filled with joy and laughter! Keep being a Champion! Mummy & Papa love you!' : 'Wishing you a wonderful day filled with happiness!';
+  var bonusHtml = isKid ? '<div style="background:#fef3c7;border-radius:12px;padding:12px;margin-bottom:14px;border:2px solid #f59e0b"><div style="font-weight:900;color:#92400e;font-size:18px">+50 🪙 Birthday Coins!</div></div>' : '';
+  for(var i=0;i<25;i++){(function(idx){setTimeout(function(){var c=document.createElement('div');c.style.cssText='position:fixed;pointer-events:none;z-index:600;border-radius:2px;width:8px;height:8px;left:'+Math.random()*100+'vw;top:-10px;background:'+['#f59e0b','#ef4444','#3b82f6','#ec4899','#059669'][idx%5]+';transition:transform 1.5s,opacity 1.5s';document.body.appendChild(c);setTimeout(function(){c.style.transform='translateY(100vh)';c.style.opacity='0';},50);setTimeout(function(){c.remove();},1600);},idx*70);})(i);}
+  var card=document.createElement('div');
   card.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';
-  card.innerHTML=
-    '<div style="background:#fff;border-radius:24px;padding:0;width:100%;max-width:360px;overflow:hidden;animation:pop .4s ease;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+
-      
-      '<div style="background:linear-gradient(135deg,'+color+',#f59e0b);padding:30px 20px;text-align:center;position:relative;overflow:hidden">'+
-        '<div style="font-size:14px;font-weight:800;color:rgba(255,255,255,.85);margin-bottom:6px;letter-spacing:1px">🎉 HAPPY BIRTHDAY 🎉</div>'+
-        '<div style="font-size:70px;margin-bottom:8px;animation:bob 1s ease-in-out infinite">'+emoji+'</div>'+
-        '<div style="font-size:28px;font-weight:900;color:#fff">'+name+'!</div>'+
-        '<div style="font-size:16px;color:rgba(255,255,255,.9);margin-top:4px">You are '+age+' years old today! 🥳</div>'+
-        
-        '<div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.15)"></div>'+
-        '<div style="position:absolute;bottom:-30px;left:-10px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.1)"></div>'+
-      '</div>'+
-      
-      '<div style="padding:20px;text-align:center">'+
-        '<div style="font-size:32px;margin-bottom:12px">🎂🎈🎁🌟🎊</div>'+
-        '<div style="font-size:14px;color:#374151;line-height:1.7;margin-bottom:16px">'+
-          (isKid?
-            'Wishing you a day filled with<br>joy, laughter and cake! 🍰<br><br>'+
-            '<span style="font-weight:700;color:'+color+'">Keep being a Champion!</span><br>'+
-            'Mummy & Papa love you so much! ❤️':
-            'Wishing you a wonderful day<br>filled with happiness! 🌟<br><br>'+
-            '<span style="font-weight:700;color:'+color+'">Have a fantastic birthday!</span>'+
-          ')+'</div>'+
-        
-        (isKid?'<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:12px;margin-bottom:14px;border:2px solid #f59e0b">'+
-          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px">🎁 BIRTHDAY BONUS!</div>'+
-          '<div style="font-size:20px;font-weight:900;color:#92400e">+50 🪙 Birthday Coins!</div>'+
-          '<div style="font-size:10px;color:#92400e;margin-top:2px">Added to your wallet!</div>'+
-        '</div>':'')+
-        '<button onclick="this.closest(\'div\').parentElement.parentElement.remove()" style="width:100%;border:none;border-radius:50px;padding:13px;font-size:14px;font-weight:800;background:linear-gradient(135deg,'+color+',#f59e0b);color:#fff;cursor:pointer">🎉 Thank You! 🎉</button>'+
-      '</div>'+
-    '</div>';
-
-  
-  if(isKid){
-    var uid = currentUser&&currentUser.uid;
-    db.collection('wallets').doc(uid).get().then(function(doc){
-      var current = doc.exists?(doc.data().coins||0):0;
-      
-      var lastBday = doc.exists?(doc.data().lastBdayYear||0):0;
-      var thisYear = new Date().getFullYear();
-      if(lastBday!==thisYear){
-        db.collection('wallets').doc(uid).set({
-          coins:current+50,
-          lastBdayYear:thisYear
-        },{merge:true});
-      }
-    });
-  }
-
-  card.addEventListener('click',function(e){if(e.target===card)card.remove();});
+  var inner=document.createElement('div');
+  inner.style.cssText='background:#fff;border-radius:24px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)';
+  inner.innerHTML='<div style="background:linear-gradient(135deg,'+color+',#f59e0b);padding:28px 20px;text-align:center"><div style="font-size:13px;font-weight:800;color:rgba(255,255,255,.85);margin-bottom:6px">🎉 HAPPY BIRTHDAY 🎉</div><div style="font-size:60px;margin-bottom:8px">'+emoji+'</div><div style="font-size:24px;font-weight:900;color:#fff">'+name+'!</div><div style="font-size:14px;color:rgba(255,255,255,.9);margin-top:4px">You are '+age+' years old today! 🥳</div></div><div style="padding:20px;text-align:center"><div style="font-size:28px;margin-bottom:10px">🎂🎈🎁🌟🎊</div><div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px">'+msg+'</div>'+bonusHtml+'<button id="bday-btn" style="width:100%;border:none;border-radius:50px;padding:12px;font-size:14px;font-weight:800;background:linear-gradient(135deg,'+color+',#f59e0b);color:#fff;cursor:pointer">🎉 Thank You! 🎉</button></div>';
+  card.appendChild(inner);
+  inner.querySelector('#bday-btn').onclick=function(){card.remove();};
+  card.onclick=function(e){if(e.target===card)card.remove();};
   document.body.appendChild(card);
+  if(isKid){var uid=currentUser&&currentUser.uid;db.collection('wallets').doc(uid).get().then(function(doc){var coins=doc.exists?(doc.data().coins||0):0;var lastBday=doc.exists?(doc.data().lastBdayYear||0):0;var yr=new Date().getFullYear();if(lastBday!==yr){db.collection('wallets').doc(uid).set({coins:coins+50,lastBdayYear:yr},{merge:true});}});}
 }
 
 function getStatementTransactions(kid){
