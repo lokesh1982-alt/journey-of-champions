@@ -995,6 +995,7 @@ function showForgotForm(show){
 }
 
 loadFirebase(function(){
+  try{
   firebase.initializeApp(firebaseConfig);
   db=firebase.firestore();
   auth=firebase.auth();
@@ -1023,6 +1024,11 @@ loadFirebase(function(){
       } else {currentUser=null;currentUserProfile=null;showScreen('login');}
     });
   });
+  }catch(e){
+    var lm=document.getElementById('loading-msg');
+    if(lm)lm.textContent='Error: '+e.message;
+    setTimeout(function(){showScreen('login');},3000);
+  }
 });
 
 
@@ -4662,17 +4668,10 @@ function downloadStatementExcel(){
   showToast('📊 Excel file downloaded!');
 }
 
-// Force unregister old service workers to prevent stale cache issues
+// Service worker disabled for stability
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(registrations){
-    registrations.forEach(function(reg){ reg.unregister(); });
-  });
-}
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('/journey-of-champions/sw.js')
-      .then(function(reg){ console.log('SW registered'); })
-      .catch(function(err){ console.log('SW failed:', err); });
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
   });
 }
 
