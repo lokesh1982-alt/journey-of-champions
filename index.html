@@ -1745,7 +1745,10 @@ function switchTab(tab){
     var v=document.getElementById('view-'+t);if(v)v.classList.toggle('hidden',t!==tab);
     var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',t===tab);
   });
-  if(tab==='photos')renderFolderView();
+  if(tab==='photos'){
+    // Always load from Firestore when opening files tab
+    loadFilesFromFirestore(photoKid, currentFolder, function(){ renderFolderView(); });
+  }
   if(tab==='report'){renderReport();dailyActivityOffset=0;loadDailyActivity(0);}
   if(tab==='admin')renderUsersList();
   if(tab==='quiz')initQuizTab();
@@ -1874,31 +1877,28 @@ function handleFileUpload(e){
 }
 
 function loadFilesFromFirestore(kid, folder, cb){
-  db.collection('userfiles')
-    .where('kid','==',kid)
-    .where('folder','==',folder)
-    .orderBy('timestamp','desc')
-    .get().then(function(snap){
-      var files=[];
-      snap.forEach(function(doc){
-        var d=doc.data();
-        d.id=doc.id;
-        files.push(d);
-      });
-      if(!data.files[kid]) data.files[kid]={};
-      data.files[kid][folder]=files;
-      if(cb) cb(files);
-    }).catch(function(){
-      // Fallback to index query without orderBy
-      db.collection('userfiles').where('kid','==',kid).where('folder','==',folder).get().then(function(snap){
-        var files=[];
-        snap.forEach(function(doc){var d=doc.data();d.id=doc.id;files.push(d);});
-        files.sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
-        if(!data.files[kid]) data.files[kid]={};
-        data.files[kid][folder]=files;
-        if(cb) cb(files);
-      }).catch(function(){if(cb)cb([]);});
+  // Load ALL files for this kid at once (not just one folder)
+  db.collection('userfiles').where('kid','==',kid).get().then(function(snap){
+    var filesByFolder={};
+    snap.forEach(function(doc){
+      var d=doc.data(); d.id=doc.id;
+      if(!filesByFolder[d.folder]) filesByFolder[d.folder]=[];
+      filesByFolder[d.folder].push(d);
     });
+    // Sort each folder by timestamp
+    Object.keys(filesByFolder).forEach(function(f){
+      filesByFolder[f].sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
+    });
+    if(!data.files) data.files={dhruv:{},vedika:{}};
+    if(!data.files[kid]) data.files[kid]={};
+    // Merge into data.files
+    Object.keys(filesByFolder).forEach(function(f){
+      data.files[kid][f]=filesByFolder[f];
+    });
+    if(cb) cb(data.files[kid][folder]||[]);
+  }).catch(function(){
+    if(cb) cb([]);
+  });
 }
 var previewIdx=null;
 function previewFile(i){
@@ -4793,22 +4793,24 @@ function downloadStatementExcel(){
 // FAMILY PHOTO
 // ══════════════════════════════════════
 function loadFamilyPhoto(){
-  if(!data) return;
-  var photo = data.familyPhoto||'';
-  var img = document.getElementById('family-photo-img');
-  var placeholder = document.getElementById('family-photo-placeholder');
-  var editBtn = document.getElementById('family-photo-edit-btn');
-  if(!img) return;
-  if(photo){
-    img.src = photo;
-    img.style.display='block';
-    if(placeholder) placeholder.style.display='none';
-    if(editBtn) editBtn.style.display='block';
-  } else {
-    img.style.display='none';
-    if(placeholder) placeholder.style.display='block';
-    if(editBtn) editBtn.style.display='none';
-  }
+  // Load from dedicated Firestore document
+  db.collection('appdata').doc('familyphoto').get().then(function(doc){
+    var photo = doc.exists?(doc.data().photo||''):'';
+    var img = document.getElementById('family-photo-img');
+    var placeholder = document.getElementById('family-photo-placeholder');
+    var editBtn = document.getElementById('family-photo-edit-btn');
+    if(!img) return;
+    if(photo){
+      img.src=photo;
+      img.style.display='block';
+      if(placeholder) placeholder.style.display='none';
+      if(editBtn) editBtn.style.display='block';
+    } else {
+      img.style.display='none';
+      if(placeholder) placeholder.style.display='block';
+      if(editBtn) editBtn.style.display='none';
+    }
+  }).catch(function(){});
 }
 
 function openFamilyPhotoMenu(){
@@ -4869,8 +4871,7 @@ function openFamilyPhotoMenu(){
 }
 
 function pickFamilyPhoto(fileId){
-  // Find the file in loaded data
-  var found = null;
+  var found=null;
   ['dhruv','vedika'].forEach(function(kid){
     if(data.files&&data.files[kid]){
       Object.values(data.files[kid]).forEach(function(arr){
@@ -4881,12 +4882,15 @@ function pickFamilyPhoto(fileId){
     }
   });
   if(found&&found.data){
-    data.familyPhoto = found.data;
-    saveData();
-    loadFamilyPhoto();
-    var picker = document.getElementById('family-photo-picker');
-    if(picker) picker.remove();
-    showToast('Family photo updated! 👨‍👩‍👧‍👦');
+    // Save to dedicated family photo document
+    db.collection('appdata').doc('familyphoto').set({photo:found.data}).then(function(){
+      loadFamilyPhoto();
+      var picker=document.getElementById('family-photo-picker');
+      if(picker) picker.remove();
+      showToast('Family photo updated! 👨‍👩‍👧‍👦');
+    }).catch(function(){
+      showToast('Error saving photo. Try again.');
+    });
   }
 }
 
@@ -4909,11 +4913,12 @@ function triggerFamilyPhotoUpload(){
 }
 
 function removeFamilyPhoto(){
-  document.querySelectorAll('div[style*="align-items:flex-end"]').forEach(function(m){if(m.style.position==='fixed')m.remove();});
+  document.querySelectorAll('#family-photo-picker').forEach(function(m){m.remove();});
   if(!confirm('Remove family photo?'))return;
-  data.familyPhoto='';
-  saveData();loadFamilyPhoto();
-  showToast('Photo removed');
+  db.collection('appdata').doc('familyphoto').set({photo:''}).then(function(){
+    loadFamilyPhoto();
+    showToast('Photo removed');
+  });
 }
 
 // Service worker disabled for stability
