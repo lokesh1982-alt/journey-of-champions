@@ -1794,48 +1794,79 @@ function selectFolder(id){
   });
 }
 function renderFilesGrid(){initFolders();var folder=data.folders[photoKid][currentFolder],files=data.files[photoKid][currentFolder]||[];document.getElementById('files-folder-title').textContent=(folder?folder.icon+' '+folder.name:'');document.getElementById('files-count').textContent=files.length+' items';document.getElementById('del-folder-btn').style.display=(folder&&folder.locked)?'none':'inline-block';var grid=document.getElementById('files-grid');if(files.length===0){grid.innerHTML='<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">📭 No files yet. Tap + Upload!</div>';return;}grid.innerHTML='<div class="photo-grid-files">'+files.map(function(f,i){var isImg=f.type&&f.type.indexOf('image')>-1;var ext=f.name?f.name.split('.').pop().toUpperCase():'FILE';var ec={PDF:'#ef4444',DOC:'#3b82f6',DOCX:'#3b82f6',XLS:'#059669',XLSX:'#059669'}[ext]||'#6b7280';return '<div class="file-thumb" onclick="previewFile('+i+')">'+( isImg?'<img src="'+f.data+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">':'<div style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><div style="font-size:22px">📄</div><div style="font-size:8px;font-weight:800;color:'+ec+';background:'+ec+'20;padding:2px 5px;border-radius:3px">'+ext+'</div></div>')+'<div style="padding:3px 5px;font-size:8px;color:#374151;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</div></div>';}).join('')+'</div>';}
+function compressImage(dataUrl, maxSizeKB, cb){
+  var img = new Image();
+  img.onload = function(){
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    // Start with original dimensions
+    var w = img.width, h = img.height;
+    // Scale down if very large
+    var maxDim = 1200;
+    if(w>maxDim||h>maxDim){
+      if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}
+      else{w=Math.round(w*maxDim/h);h=maxDim;}
+    }
+    canvas.width=w; canvas.height=h;
+    ctx.drawImage(img,0,0,w,h);
+    // Try quality from 0.9 down until size is acceptable
+    var quality=0.9;
+    var result=canvas.toDataURL('image/jpeg',quality);
+    while(result.length > maxSizeKB*1024*1.37 && quality>0.2){
+      quality-=0.1;
+      result=canvas.toDataURL('image/jpeg',quality);
+    }
+    cb(result);
+  };
+  img.src=dataUrl;
+}
+
 function handleFileUpload(e){
   var files=Array.from(e.target.files);
   if(!files.length)return;
   initFolders();
-  var uploaded=0,total=files.length;
-  showToast('Uploading '+total+' file'+(total>1?'s':'')+'... ⏳');
+  var uploaded=0, total=files.length;
+  showToast('Processing '+total+' file'+(total>1?'s':'')+'... ⏳');
   files.forEach(function(file){
-    // Check size - max 1.5MB per file (safe for Firestore)
-    if(file.size>1.5*1024*1024){
-      showToast(file.name+' too large! Max 1.5MB per file');
-      total--;
-      if(uploaded===total&&total>0){renderFolderView();}
-      return;
-    }
     var reader=new FileReader();
     reader.onload=function(ev){
-      var fileData={
-        name:file.name,type:file.type,size:file.size,
-        data:ev.target.result,
-        date:new Date().toLocaleDateString('en-IN'),
-        kid:photoKid,folder:currentFolder,
-        timestamp:Date.now()
-      };
-      // Save to SEPARATE Firestore collection - not inside appdata/main
-      var docId=photoKid+'_'+currentFolder+'_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);
-      db.collection('userfiles').doc(docId).set(fileData).then(function(){
-        // Also keep reference in data.files (without the actual base64 data)
-        if(!data.files[photoKid][currentFolder]) data.files[photoKid][currentFolder]=[];
-        data.files[photoKid][currentFolder].push({
-          id:docId,name:file.name,type:file.type,size:file.size,
-          data:ev.target.result, // keep in memory for display
-          date:fileData.date,timestamp:fileData.timestamp
+      var isImage = file.type&&file.type.indexOf('image')>-1;
+      function saveFile(finalData){
+        var fileData={
+          name:file.name, type:file.type, size:file.size,
+          data:finalData,
+          date:new Date().toLocaleDateString('en-IN'),
+          kid:photoKid, folder:currentFolder,
+          timestamp:Date.now()
+        };
+        var docId=photoKid+'_'+currentFolder+'_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);
+        db.collection('userfiles').doc(docId).set(fileData).then(function(){
+          if(!data.files[photoKid][currentFolder]) data.files[photoKid][currentFolder]=[];
+          data.files[photoKid][currentFolder].push({
+            id:docId, name:file.name, type:file.type, size:file.size,
+            data:finalData, date:fileData.date, timestamp:fileData.timestamp
+          });
+          uploaded++;
+          if(uploaded===total){
+            renderFolderView();
+            showToast(total+' file'+(total>1?'s':'')+' uploaded! ✅');
+          }
+        }).catch(function(err){
+          showToast('Error saving '+file.name+'. Try again.');
         });
-        uploaded++;
-        if(uploaded===total){
-          renderFolderView();
-          showToast(total+' file'+(total>1?'s':'')+' uploaded! ✅');
+      }
+      if(isImage){
+        // Auto compress image to under 800KB
+        compressImage(ev.target.result, 800, function(compressed){
+          saveFile(compressed);
+        });
+      } else {
+        // Non-image files — warn if large but still try
+        if(file.size>1.5*1024*1024){
+          showToast('⚠️ '+file.name+' is large ('+Math.round(file.size/1024/1024*10)/10+'MB) — trying to upload...');
         }
-      }).catch(function(err){
-        console.error('File save error:',err);
-        showToast('Error saving '+file.name+'. Try smaller file.');
-      });
+        saveFile(ev.target.result);
+      }
     };
     reader.readAsDataURL(file);
   });
