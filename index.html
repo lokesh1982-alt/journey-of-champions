@@ -328,6 +328,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- HOME -->
   <div id="view-home">
+
+    <!-- FAMILY PHOTO CARD -->
+    <div style="background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px;border:2px solid #e5e7eb;position:relative">
+      <div id="family-photo-display" style="width:100%;min-height:150px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="openFamilyPhotoMenu()">
+        <div id="family-photo-placeholder" style="text-align:center;color:#fff;padding:20px">
+          <div style="font-size:40px;margin-bottom:8px">👨‍👩‍👧‍👦</div>
+          <div style="font-size:13px;font-weight:700">Our Family Photo</div>
+          <div style="font-size:11px;opacity:.8;margin-top:2px">Tap to add a photo</div>
+        </div>
+        <img id="family-photo-img" src="" style="width:100%;max-height:220px;object-fit:cover;display:none">
+        <div id="family-photo-edit-btn" style="display:none;position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);border:none;border-radius:50px;padding:5px 12px;color:#fff;font-size:11px;font-weight:700;cursor:pointer" onclick="openFamilyPhotoMenu()">✏️ Change Photo</div>
+      </div>
+    </div>
+
     <div class="kids-row">
       <div class="kid-card active-dhruv" id="card-dhruv" onclick="selectKid('dhruv')">
         <div class="kid-top"><div class="kid-avatar" style="background:#dbeafe">🐯</div><div><div class="kid-name">Dhruv</div><div class="kid-sub" id="dhruv-mode-lbl">Vacation</div></div></div>
@@ -1142,13 +1156,24 @@ function applyRolePermissions(){
   var kidsTab = document.getElementById('tab-kids');
   if(kidsTab) kidsTab.style.display = isViewer?'none':'block';
 
-  
-  if(isChild&&p.linkedKid){
-    selectedKid=p.linkedKid;
+  // Only restrict kid cards for child role — admin/parent always see both
+  if(isChild && p.linkedKid){
+    selectedKid = p.linkedKid;
     ['dhruv','vedika'].forEach(function(k){
-      document.getElementById('card-'+k).style.pointerEvents=p.linkedKid===k?'auto':'none';
-      document.getElementById('card-'+k).style.opacity=p.linkedKid===k?'1':'0.4';
+      document.getElementById('card-'+k).style.pointerEvents = p.linkedKid===k?'auto':'none';
+      document.getElementById('card-'+k).style.opacity = p.linkedKid===k?'1':'0.4';
     });
+  } else if(isParent){
+    // Admin/Parent always see both kids fully active
+    ['dhruv','vedika'].forEach(function(k){
+      document.getElementById('card-'+k).style.pointerEvents = 'auto';
+      document.getElementById('card-'+k).style.opacity = '1';
+    });
+    // Fix: if admin/parent has linkedKid set wrongly, clear it
+    if(p.linkedKid && !isChild){
+      db.collection('users').doc(currentUser.uid).update({linkedKid:''});
+      currentUserProfile.linkedKid = '';
+    }
   }
 
   
@@ -1520,18 +1545,21 @@ function render(){
 
 function renderKidCards(){
   ['dhruv','vedika'].forEach(function(kid){
-    var earned=getWeekEarned(kid),saved=getSaved(kid),pct=getGoalPct(kid);
+    var earned=getWeekEarned(kid,weekOffset);
+    var saved=getSaved(kid,weekOffset);
+    var pct=getGoalPct(kid);
     document.getElementById(kid+'-earned').textContent='₹'+earned;
     document.getElementById(kid+'-saved').textContent='₹'+saved;
     document.getElementById(kid+'-goal-pct').textContent=pct+'%';
-    setTimeout(function(){document.getElementById(kid+'-goal-bar').style.width=pct+'%';},100);
+    setTimeout(function(){ document.getElementById(kid+'-goal-bar').style.width=pct+'%'; },100);
     document.getElementById(kid+'-mode-lbl').textContent=mode==='vacation'?'🌴 Vacation':'📚 School';
     document.getElementById('card-'+kid).className='kid-card'+(kid===selectedKid?' active-'+kid:'');
+    // Always use TODAY for task progress ring — regardless of selected day/kid
     var tasks=((data.tasks&&data.tasks[mode])||[]).filter(function(t){return t.kid==='both'||t.kid===kid;});
-    var ch=getChecks(kid,weekOffset===0?today:selectedDay,weekOffset);
+    var ch=getChecks(kid,today,0); // Always today's progress for the ring
     var done=tasks.filter(function(t){return ch[t.id];}).length;
     var tp=tasks.length>0?Math.round(done/tasks.length*100):0;
-    setTimeout(function(){document.getElementById(kid+'-task-fill').style.width=tp+'%';},100);
+    setTimeout(function(){ document.getElementById(kid+'-task-fill').style.width=tp+'%'; },100);
     document.getElementById(kid+'-task-lbl').textContent=done+'/'+tasks.length+' today';
   });
   var wl=document.getElementById('week-label');
@@ -4413,7 +4441,7 @@ var _origRender = render;
 function render(){
   if(!data||!document.getElementById('screen-app').classList.contains('active'))return;
   renderKidCards();renderDays();renderTasks();renderGoal();renderSummary();
-  renderLevel();renderBadges();renderComments();renderStatementPreview();
+  renderLevel();renderBadges();renderComments();renderStatementPreview();loadFamilyPhoto();
   var colors={dhruv:'var(--blue)',vedika:'var(--pink)'};
   document.getElementById('tasks-head').style.background=colors[selectedKid];
   document.getElementById('tasks-title').textContent=selectedKid==='dhruv'?"Dhruv's Tasks":"Vedika's Tasks";
@@ -4605,6 +4633,69 @@ function downloadStatementExcel(){
   a.click();
   URL.revokeObjectURL(url);
   showToast('📊 Excel file downloaded!');
+}
+
+// ══════════════════════════════════════
+// FAMILY PHOTO
+// ══════════════════════════════════════
+function loadFamilyPhoto(){
+  if(!data) return;
+  var photo = data.familyPhoto||'';
+  var img = document.getElementById('family-photo-img');
+  var placeholder = document.getElementById('family-photo-placeholder');
+  var editBtn = document.getElementById('family-photo-edit-btn');
+  if(!img) return;
+  if(photo){
+    img.src = photo;
+    img.style.display='block';
+    if(placeholder) placeholder.style.display='none';
+    if(editBtn) editBtn.style.display='block';
+  } else {
+    img.style.display='none';
+    if(placeholder) placeholder.style.display='block';
+    if(editBtn) editBtn.style.display='none';
+  }
+}
+
+function openFamilyPhotoMenu(){
+  var isParent = currentUserProfile&&(currentUserProfile.role==='admin'||currentUserProfile.role==='parent');
+  if(!isParent) return;
+  var m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:16px';
+  m.innerHTML='<div style="background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px">'+
+    '<div style="font-size:15px;font-weight:800;margin-bottom:14px;text-align:center">👨‍👩‍👧‍👦 Family Photo</div>'+
+    '<button onclick="triggerFamilyPhotoUpload()" style="width:100%;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:700;background:#ede9fe;color:#7c3aed;cursor:pointer;margin-bottom:8px;display:block">📷 Upload New Photo</button>'+
+    (data&&data.familyPhoto?'<button onclick="removeFamilyPhoto()" style="width:100%;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:700;background:#fee2e2;color:#ef4444;cursor:pointer;margin-bottom:8px;display:block">🗑️ Remove Photo</button>':'')+
+    '<button onclick="this.closest(\'div\').parentElement.remove()" style="width:100%;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:700;background:#f3f4f6;color:#6b7280;cursor:pointer;display:block">Cancel</button>'+
+  '</div>';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+function triggerFamilyPhotoUpload(){
+  document.querySelectorAll('div[style*="align-items:flex-end"]').forEach(function(m){if(m.style.position==='fixed')m.remove();});
+  var inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';
+  inp.onchange=function(e){
+    var file=e.target.files[0];if(!file)return;
+    if(file.size>2*1024*1024){showToast('Photo too large! Max 2MB');return;}
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      data.familyPhoto=ev.target.result;
+      saveData();loadFamilyPhoto();
+      showToast('Family photo updated! 👨‍👩‍👧‍👦');
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+}
+
+function removeFamilyPhoto(){
+  document.querySelectorAll('div[style*="align-items:flex-end"]').forEach(function(m){if(m.style.position==='fixed')m.remove();});
+  if(!confirm('Remove family photo?'))return;
+  data.familyPhoto='';
+  saveData();loadFamilyPhoto();
+  showToast('Photo removed');
 }
 
 // Service worker disabled for stability
