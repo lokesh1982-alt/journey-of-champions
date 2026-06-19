@@ -1,0 +1,9 @@
+{
+  "name":"Goal Planner",
+  "short_name":"Goals",
+  "start_url":"./goal-planner.html",
+  "display":"standalone",
+  "background_color":"#0D0B1F",
+  "theme_color":"#4C3BCF",
+  "icons":[{"src":"https://via.placeholder.com/192/4C3BCF/ffffff?text=GP","sizes":"192x192","type":"image/png"},{"src":"https://via.placeholder.com/512/4C3BCF/ffffff?text=GP","sizes":"512x512","type":"image/png"}]
+}
