@@ -1564,11 +1564,15 @@ async function correctGrammar(){
   const statusEl=document.getElementById('grammar-status');
   statusEl.textContent='✨ Checking grammar & spelling...';
   try{
+    const params=new URLSearchParams();
+    params.append('text',content);
+    params.append('language','en-US');
     const res=await fetch('https://api.languagetool.org/v2/check',{
       method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:`text=${encodeURIComponent(content)}&language=en-IN`
+      headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},
+      body:params.toString()
     });
+    if(!res.ok)throw new Error('API error: '+res.status);
     const data=await res.json();
     if(!data.matches||data.matches.length===0){
       statusEl.textContent='✅ No errors found — your text looks great!';
@@ -1586,7 +1590,27 @@ async function correctGrammar(){
     ta.value=corrected;
     statusEl.textContent=`✅ Fixed ${data.matches.length} issue(s)!`;
   }catch(e){
-    statusEl.textContent='❌ Could not connect. Check your internet and try again.';
+    console.error('Grammar check error:',e);
+    // Fallback: basic common corrections
+    let corrected=content;
+    const commonFixes=[
+      [/\bi\b/g,'I'],[/\bdont\b/g,"don't"],[/\bcant\b/g,"can't"],[/\bwont\b/g,"won't"],
+      [/\bim\b/g,"I'm"],[/\bive\b/g,"I've"],[/\bId\b/g,"I'd"],[/\bIll\b/g,"I'll"],
+      [/\bteh\b/g,'the'],[/\brecieve\b/g,'receive'],[/\boccured\b/g,'occurred'],
+      [/\bseperate\b/g,'separate'],[/\bdefinate\b/g,'definite'],[/\bneccessary\b/g,'necessary'],
+      [/\bwierd\b/g,'weird'],[/\bfreind\b/g,'friend'],[/\bbelive\b/g,'believe'],
+      [/\bwould of\b/g,'would have'],[/\bcould of\b/g,'could have'],[/\bshould of\b/g,'should have'],
+      [/ ,/g,','],[/ \./g,'.'],[/\s{2,}/g,' ']
+    ];
+    commonFixes.forEach(([pattern,fix])=>corrected=corrected.replace(pattern,fix));
+    // Capitalize first letter of sentences
+    corrected=corrected.replace(/(^\s*|\.\s+|!\s+|\?\s+)([a-z])/g,(m,p1,p2)=>p1+p2.toUpperCase());
+    if(corrected!==content){
+      ta.value=corrected;
+      statusEl.textContent='✅ Basic corrections applied! (Grammar server unreachable)';
+    } else {
+      statusEl.textContent='⚠️ Grammar server unreachable. Try again later.';
+    }
   }
 }
 
