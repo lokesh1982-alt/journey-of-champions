@@ -1098,17 +1098,20 @@ async function saveGoal(){
       if(!g.tasks)g.tasks=[];
     }
   } else {
-    // Editing — update savings target if savings type, ask before regenerating tasks
+    // Editing — only ask to regenerate if dates changed
     if(selectedGoalType==='savings'){
       g.savingsCurrency=document.getElementById('savings-currency').value||'₹';
       g.savingsTarget=parseFloat(document.getElementById('savings-target').value)||0;
-    } else if(confirm('Do you want to regenerate tasks? (This will reset existing task progress)')){
-      if(selectedGoalType==='habit'){
-        g.skipDays=[...skipDays];
-        g.tasks=generateHabitTasks(startDate,dueDate,skipDays,title);
-      } else if(selectedGoalType==='weekly'){
-        const wTask=document.getElementById('weekly-task-name').value.trim()||title;
-        g.tasks=generateWeeklyTasks(startDate,dueDate,wTask);
+    } else {
+      const datesChanged=g.startDate!==startDate||g.dueDate!==dueDate;
+      if(datesChanged&&confirm('Dates have changed. Do you want to regenerate tasks?\n(This will reset existing task progress)')){
+        if(selectedGoalType==='habit'){
+          g.skipDays=[...skipDays];
+          g.tasks=generateHabitTasks(startDate,dueDate,skipDays,title);
+        } else if(selectedGoalType==='weekly'){
+          const wTask=document.getElementById('weekly-task-name').value.trim()||title;
+          g.tasks=generateWeeklyTasks(startDate,dueDate,wTask);
+        }
       }
     }
   }
