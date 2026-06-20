@@ -347,6 +347,28 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .nb-modal{background:#F0F9FF;border-top:3px solid var(--nb-accent);}
 .nb-modal .modal-title{color:var(--nb-text);}
 
+/* REMINDERS */
+.reminder-card{background:var(--nb-card);border:1.5px solid var(--nb-border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;}
+.reminder-card.today{border-color:#F59E0B;background:#FFFBEB;}
+.reminder-card.overdue{border-color:#EF4444;background:#FFF5F5;}
+.reminder-card.upcoming{border-color:var(--nb-border);}
+.reminder-date-box{background:#EFF6FF;border:1px solid var(--nb-border);border-radius:10px;padding:8px 12px;text-align:center;flex-shrink:0;min-width:52px;}
+.reminder-date-box.today{background:#FEF3C7;border-color:#F59E0B;}
+.reminder-date-box.overdue{background:#FEE2E2;border-color:#EF4444;}
+.reminder-day{font-size:1.3rem;font-weight:700;color:var(--nb-text);line-height:1;}
+.reminder-month{font-size:0.62rem;color:#64748B;font-weight:600;text-transform:uppercase;}
+.reminder-info{flex:1;}
+.reminder-title{font-size:0.9rem;font-weight:700;color:var(--nb-text);margin-bottom:3px;}
+.reminder-note{font-size:0.78rem;color:#475569;line-height:1.4;}
+.reminder-status{font-size:0.68rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block;}
+.status-today{background:#FEF3C7;color:#92400E;}
+.status-overdue{background:#FEE2E2;color:#991B1B;}
+.status-upcoming{background:#DBEAFE;color:#1E40AF;}
+.reminder-del{background:none;border:none;color:#94A3B8;cursor:pointer;font-size:1rem;padding:2px;flex-shrink:0;}
+.reminder-del:hover{color:#EF4444;}
+.reminder-banner{background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(234,179,8,0.1));border:1px solid rgba(245,158,11,0.5);border-radius:var(--radius);padding:14px;margin-bottom:14px;}
+.reminder-banner-title{font-size:0.9rem;font-weight:700;color:#92400E;margin-bottom:8px;}
+.reminder-banner-item{font-size:0.82rem;color:#78350F;padding:4px 0;display:flex;align-items:center;gap:8px;}
 @media(max-width:380px){.stats-grid{grid-template-columns:1fr 1fr;}.cat-grid{grid-template-columns:repeat(2,1fr);}.goal-type-grid{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
@@ -482,9 +504,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="section" id="sec-diary">
       <div class="nb-header" style="background:linear-gradient(135deg,#0369A1,#0284C7)">
         <div class="nb-header-title">📔 Daily Diary</div>
-        <div class="nb-header-sub">Your day-by-day agenda & thoughts</div>
+        <div class="nb-header-sub">Your day-by-day agenda & scheduled reminders</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="nb-btn" onclick="showDiaryTab('entries')" id="diary-tab-entries" style="flex:1">📔 Diary Entries</button>
+        <button class="nb-btn-outline" onclick="showDiaryTab('reminders')" id="diary-tab-reminders" style="flex:1">🔔 Reminders</button>
       </div>
       <div id="diary-content"></div>
+      <div id="reminders-content" style="display:none"></div>
     </div>
   </div>
 
@@ -656,6 +683,33 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   </div>
 </div>
 
+<!-- REMINDER MODAL -->
+<div class="modal-overlay" id="reminder-modal">
+  <div class="modal nb-modal">
+    <div class="modal-header">
+      <div class="modal-title">🔔 Add Reminder</div>
+      <button class="btn-close" onclick="closeModal('reminder-modal')" style="background:#DBEAFE;color:var(--nb-text)">✕</button>
+    </div>
+    <div class="nb-form-group">
+      <label class="nb-label">Event / Activity Title *</label>
+      <input class="nb-input" id="rm-title" placeholder="e.g. Doctor appointment, Team meeting..."/>
+    </div>
+    <div class="nb-form-group">
+      <label class="nb-label">Date *</label>
+      <input class="nb-input" type="date" id="rm-date"/>
+    </div>
+    <div class="nb-form-group">
+      <label class="nb-label">Time (optional)</label>
+      <input class="nb-input" type="time" id="rm-time"/>
+    </div>
+    <div class="nb-form-group">
+      <label class="nb-label">Note / Details</label>
+      <textarea class="nb-textarea" id="rm-note" style="min-height:80px" placeholder="Any additional details..."></textarea>
+    </div>
+    <button class="nb-btn" onclick="saveReminder()" style="width:100%">Save Reminder</button>
+  </div>
+</div>
+
 <!-- DIARY MODAL -->
 <div class="modal-overlay" id="diary-modal">
   <div class="modal nb-modal">
@@ -723,7 +777,7 @@ const auth=firebase.auth();
 const db=firebase.firestore();
 
 // STATE
-let currentUser=null,goals=[],reflections=[],notes=[],diaryEntries=[];
+let currentUser=null,goals=[],reflections=[],notes=[],diaryEntries=[],reminders=[];
 let editingGoalId=null,editingNoteId=null,editingDiaryDate=null;
 let selectedCat='personal',selectedPriority='medium',selectedMood='🙂',selectedDiaryMood='🙂';
 let selectedGoalType='habit',skipDays=[6];
@@ -775,7 +829,7 @@ auth.onAuthStateChanged(async user=>{
     checkDeadlineAlerts();
     scheduleNotifications();
   } else {
-    currentUser=null;goals=[];reflections=[];notes=[];diaryEntries=[];
+    currentUser=null;goals=[];reflections=[];notes=[];diaryEntries=[];reminders=[];
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
   }
@@ -784,16 +838,18 @@ auth.onAuthStateChanged(async user=>{
 // DATA LOAD
 async function loadData(){
   const uid=currentUser.uid;
-  const [gSnap,rSnap,nSnap,dSnap]=await Promise.all([
+  const [gSnap,rSnap,nSnap,dSnap,rmSnap]=await Promise.all([
     db.collection('users').doc(uid).collection('goals').orderBy('createdAt','desc').get(),
     db.collection('users').doc(uid).collection('reflections').orderBy('date','desc').get(),
     db.collection('users').doc(uid).collection('notes').orderBy('date','desc').get(),
-    db.collection('users').doc(uid).collection('diary').orderBy('date','desc').get()
+    db.collection('users').doc(uid).collection('diary').orderBy('date','desc').get(),
+    db.collection('users').doc(uid).collection('reminders').orderBy('date','asc').get()
   ]);
   goals=gSnap.docs.map(d=>({id:d.id,...d.data()}));
   reflections=rSnap.docs.map(d=>({id:d.id,...d.data()}));
   notes=nSnap.docs.map(d=>({id:d.id,...d.data()}));
   diaryEntries=dSnap.docs.map(d=>({id:d.id,...d.data()}));
+  reminders=rmSnap.docs.map(d=>({id:d.id,...d.data()}));
 }
 async function saveGoalToFS(g){
   const uid=currentUser.uid;
@@ -807,6 +863,12 @@ async function saveNoteToFS(n){
   else{const ref=await db.collection('users').doc(uid).collection('notes').add(n);n.id=ref.id;}
 }
 async function deleteNoteFromFS(id){await db.collection('users').doc(currentUser.uid).collection('notes').doc(id).delete();}
+async function saveReminderToFS(r){
+  const uid=currentUser.uid;
+  if(r.id){await db.collection('users').doc(uid).collection('reminders').doc(r.id).set(r);}
+  else{const ref=await db.collection('users').doc(uid).collection('reminders').add(r);r.id=ref.id;}
+}
+async function deleteReminderFromFS(id){await db.collection('users').doc(currentUser.uid).collection('reminders').doc(id).delete();}
 async function saveDiaryToFS(d){
   const uid=currentUser.uid;
   if(d.id){await db.collection('users').doc(uid).collection('diary').doc(d.id).set(d);}
@@ -881,17 +943,29 @@ async function quickCheckTask(goalId,taskIdx,el){
 
 function renderNotifBanner(){
   const banner=document.getElementById('notif-banner-area');
-  if(!notifSettings.deadline){banner.innerHTML='';return;}
-  const alerts=[];
-  const today=new Date();today.setHours(0,0,0,0);
-  goals.filter(g=>g.status==='active'&&g.dueDate).forEach(g=>{
-    const due=new Date(g.dueDate+'T00:00:00');
-    const diff=Math.ceil((due-today)/(1000*60*60*24));
-    if(diff>=0&&diff<=3)alerts.push(`⏰ "${g.title}" is due in ${diff===0?'today':diff+' day(s)'}!`);
-    if(diff<0)alerts.push(`🚨 "${g.title}" is overdue by ${Math.abs(diff)} day(s)!`);
-  });
-  if(!alerts.length){banner.innerHTML='';return;}
-  banner.innerHTML=`<div class="notif-banner"><div class="notif-title">🔔 Alerts</div>${alerts.map(a=>`<div class="notif-item"><div class="notif-dot"></div>${a}</div>`).join('')}</div>`;
+  let html='';
+  // Deadline alerts
+  if(notifSettings.deadline){
+    const today=new Date();today.setHours(0,0,0,0);
+    const alerts=[];
+    goals.filter(g=>g.status==='active'&&g.dueDate).forEach(g=>{
+      const due=new Date(g.dueDate+'T00:00:00');
+      const diff=Math.ceil((due-today)/(1000*60*60*24));
+      if(diff>=0&&diff<=3)alerts.push(`⏰ Goal "${g.title}" due in ${diff===0?'today':diff+' day(s)'}!`);
+      if(diff<0)alerts.push(`🚨 Goal "${g.title}" is overdue by ${Math.abs(diff)} day(s)!`);
+    });
+    if(alerts.length)html+=`<div class="notif-banner"><div class="notif-title">🔔 Goal Alerts</div>${alerts.map(a=>`<div class="notif-item"><div class="notif-dot"></div>${a}</div>`).join('')}</div>`;
+  }
+  // Reminder alerts
+  const todayISO2=todayISO();
+  const todayReminders=reminders.filter(r=>r.date===todayISO2);
+  const overdueReminders=reminders.filter(r=>r.date<todayISO2);
+  if(todayReminders.length||overdueReminders.length){
+    const items=[...overdueReminders.map(r=>`🚨 OVERDUE: ${r.title}${r.time?' at '+r.time:''}`),
+                 ...todayReminders.map(r=>`📅 TODAY: ${r.title}${r.time?' at '+r.time:''}`)];
+    html+=`<div class="reminder-banner"><div class="reminder-banner-title">🔔 Reminders</div>${items.map(i=>`<div class="reminder-banner-item">📌 ${i}</div>`).join('')}</div>`;
+  }
+  banner.innerHTML=html;
 }
 
 // ── GOAL CARDS ──
@@ -1529,6 +1603,83 @@ function checkDeadlineAlerts(){
     const diff=Math.ceil((due-today)/(1000*60*60*24));
     if(diff>=0&&diff<=3)new Notification('Goal Planner ⏰',{body:`"${g.title}" is due in ${diff===0?'today':diff+' day(s)'}!`,icon:'/journey-of-champions/goal-planner/icon.png'});
   });
+}
+
+// DIARY TAB SWITCHER
+let activeDiaryTab='entries';
+function showDiaryTab(tab){
+  activeDiaryTab=tab;
+  document.getElementById('diary-content').style.display=tab==='entries'?'block':'none';
+  document.getElementById('reminders-content').style.display=tab==='reminders'?'block':'none';
+  document.getElementById('diary-tab-entries').className=tab==='entries'?'nb-btn':'nb-btn-outline';
+  document.getElementById('diary-tab-reminders').className=tab==='reminders'?'nb-btn':'nb-btn-outline';
+  if(tab==='reminders')renderReminders();
+}
+
+// REMINDERS
+function renderReminders(){
+  const c=document.getElementById('reminders-content');
+  const today=todayISO();
+  const sorted=[...reminders].sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming=sorted.filter(r=>r.date>=today);
+  const past=sorted.filter(r=>r.date<today);
+
+  function reminderCardHTML(r){
+    const d=new Date(r.date+'T00:00:00');
+    const day=d.getDate();
+    const month=d.toLocaleString('default',{month:'short'});
+    const isToday=r.date===today;
+    const isOverdue=r.date<today;
+    const statusClass=isOverdue?'overdue':isToday?'today':'upcoming';
+    const statusText=isOverdue?'⚠️ Overdue':isToday?'📅 Today':'🔵 Upcoming';
+    const statusBadgeClass=isOverdue?'status-overdue':isToday?'status-today':'status-upcoming';
+    return `<div class="reminder-card ${statusClass}">
+      <div class="reminder-date-box ${isOverdue?'overdue':isToday?'today':''}">
+        <div class="reminder-day">${day}</div>
+        <div class="reminder-month">${month}</div>
+      </div>
+      <div class="reminder-info">
+        <div class="reminder-title">${r.title}</div>
+        ${r.time?`<div class="reminder-note">🕐 ${r.time}</div>`:''}
+        ${r.note?`<div class="reminder-note">${r.note}</div>`:''}
+        <span class="reminder-status ${statusBadgeClass}">${statusText}</span>
+      </div>
+      <button class="reminder-del" onclick="deleteReminder('${r.id}')">🗑</button>
+    </div>`;
+  }
+
+  c.innerHTML=`<div class="nb-section-header">
+    <div class="nb-section-title">Scheduled Reminders</div>
+    <button class="nb-btn" onclick="openReminderModal()">+ Add</button>
+  </div>
+  ${upcoming.length?`<div style="margin-bottom:6px;font-size:0.78rem;color:#475569;font-weight:600">UPCOMING & TODAY (${upcoming.length})</div>${upcoming.map(reminderCardHTML).join('')}`:''}
+  ${past.length?`<div style="margin:14px 0 6px;font-size:0.78rem;color:#94A3B8;font-weight:600">PAST REMINDERS</div>${past.map(reminderCardHTML).join('')}`:''}
+  ${!reminders.length?`<div class="nb-empty"><div class="nb-empty-icon">🔔</div><div style="color:#64748B;font-size:0.9rem">No reminders yet. Add your first one!</div></div>`:''}`;
+}
+
+function openReminderModal(){
+  document.getElementById('rm-title').value='';
+  document.getElementById('rm-date').value='';
+  document.getElementById('rm-time').value='';
+  document.getElementById('rm-note').value='';
+  openModal('reminder-modal');
+}
+async function saveReminder(){
+  const title=document.getElementById('rm-title').value.trim();
+  const date=document.getElementById('rm-date').value;
+  if(!title){showToast('Please enter a title');return;}
+  if(!date){showToast('Please select a date');return;}
+  const r={title,date,time:document.getElementById('rm-time').value||'',note:document.getElementById('rm-note').value.trim(),createdAt:new Date().toISOString()};
+  await saveReminderToFS(r);
+  reminders.push(r);reminders.sort((a,b)=>a.date.localeCompare(b.date));
+  closeModal('reminder-modal');renderReminders();renderNotifBanner();
+  showToast('🔔 Reminder saved!');
+}
+async function deleteReminder(id){
+  if(!confirm('Delete this reminder?'))return;
+  await deleteReminderFromFS(id);
+  reminders=reminders.filter(r=>r.id!==id);
+  renderReminders();renderNotifBanner();showToast('Reminder deleted.');
 }
 
 // UTILS
