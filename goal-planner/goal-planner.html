@@ -1558,18 +1558,36 @@ function stopVoice(){
 }
 
 async function correctGrammar(){
-  const content=document.getElementById('nm-content').value.trim();
+  const ta=document.getElementById('nm-content');
+  const content=ta.value.trim();
   if(!content){showToast('Nothing to correct.');return;}
-  document.getElementById('grammar-status').textContent='✨ Correcting grammar & spelling...';
+  const statusEl=document.getElementById('grammar-status');
+  statusEl.textContent='✨ Checking grammar & spelling...';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',
-        content:`Please correct the grammar and spelling of this text. Return ONLY the corrected text with no explanation, no preamble, no quotes:\n\n${content}`}]})});
+    const res=await fetch('https://api.languagetool.org/v2/check',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`text=${encodeURIComponent(content)}&language=en-IN`
+    });
     const data=await res.json();
-    const corrected=data.content?.[0]?.text?.trim();
-    if(corrected){document.getElementById('nm-content').value=corrected;document.getElementById('grammar-status').textContent='✅ Grammar corrected!';}
-    else{document.getElementById('grammar-status').textContent='Could not correct. Try again.';}
-  }catch(e){document.getElementById('grammar-status').textContent='Error. Try again.';}
+    if(!data.matches||data.matches.length===0){
+      statusEl.textContent='✅ No errors found — your text looks great!';
+      return;
+    }
+    // Apply corrections from end to start so offsets stay valid
+    let corrected=content;
+    const sorted=[...data.matches].sort((a,b)=>b.offset-a.offset);
+    sorted.forEach(match=>{
+      if(match.replacements&&match.replacements.length>0){
+        const best=match.replacements[0].value;
+        corrected=corrected.slice(0,match.offset)+best+corrected.slice(match.offset+match.length);
+      }
+    });
+    ta.value=corrected;
+    statusEl.textContent=`✅ Fixed ${data.matches.length} issue(s)!`;
+  }catch(e){
+    statusEl.textContent='❌ Could not connect. Check your internet and try again.';
+  }
 }
 
 // ── DIARY ──
