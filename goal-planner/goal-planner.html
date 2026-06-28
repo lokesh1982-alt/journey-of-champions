@@ -227,7 +227,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* PROGRESS */
 .metric-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
 .metric-box{background:var(--card2);border-radius:var(--radius-sm);padding:14px;text-align:center;}
-.metric-val{font-size:1.5rem;font-weight:700;color:var(--accent2);line-height:1;}
+.metric-val{font-size:1.2rem;font-weight:700;color:var(--accent2);line-height:1;}
 .metric-lbl{font-size:0.68rem;color:var(--text2);margin-top:4px;}
 .report-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--radius-sm);padding:4px;margin-bottom:20px;}
 .report-tab{flex:1;padding:8px 4px;border:none;border-radius:8px;background:transparent;color:var(--text2);font-size:0.78rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;}
@@ -400,7 +400,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .goal-progress-select{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:0.88rem;font-family:inherit;outline:none;margin-bottom:14px;}
 .goal-progress-select option{background:var(--bg3);}
 .big-progress-wrap{background:var(--bg3);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;}
-.big-progress-pct{font-size:2.2rem;font-weight:700;color:var(--accent2);line-height:1;margin-bottom:8px;}
+.big-progress-pct{font-size:1.4rem;font-weight:700;color:var(--accent2);line-height:1;margin-bottom:8px;}
 .big-progress-bar{height:14px;background:var(--bg2);border-radius:7px;overflow:hidden;margin-bottom:8px;}
 .big-progress-fill{height:100%;border-radius:7px;transition:width 0.6s ease;}
 .big-progress-meta{font-size:0.78rem;color:var(--text2);}
@@ -1485,10 +1485,79 @@ function buildOverviewReport(){
 }
 
 function buildGoalLineChart(g, lineColor){
-  const tasks=g.tasks||[];
-  if(!tasks.length) return '<div style="text-align:center;padding:20px;color:var(--text3);font-size:0.85rem">No tasks generated yet</div>';
+  // Savings goal — show savings log as line chart
+  if(g.goalType==='savings'){
+    const log=g.savingsLog||[];
+    if(!log.length) return '<div style="text-align:center;padding:20px;color:var(--text3);font-size:0.85rem">No savings logged yet. Add entries to see chart.</div>';
+    const sorted=[...log].sort((a,b)=>a.date.localeCompare(b.date));
+    const target=parseFloat(g.savingsTarget)||0;
+    let cumSaved=0;
+    const points=sorted.map(e=>{cumSaved+=parseFloat(e.amount)||0;return{date:e.date,saved:cumSaved,note:e.note||'',amount:e.amount};});
+    const W=320,H=160,padL=44,padR=12,padT=16,padB=28;
+    const chartW=W-padL-padR,chartH=H-padT-padB;
+    const maxVal=Math.max(target,cumSaved,1);
+    const n=points.length;
+    function xPos(i){return padL+(i/Math.max(n-1,1))*chartW;}
+    function yPos(v){return padT+chartH-(v/maxVal)*chartH;}
+    const savedPath=points.map((p,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(p.saved).toFixed(1)}`).join(' ');
+    const targetY=yPos(target).toFixed(1);
+    const gridLines=Array.from({length:5},(_,i)=>{const y=yPos(maxVal*i/4);return`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.5"/>`;}).join('');
+    const yLabels=Array.from({length:5},(_,i)=>{const v=Math.round(maxVal*i/4);return`<text x="${padL-4}" y="${yPos(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="var(--text3)">${v>=1000?(v/1000).toFixed(0)+'k':v}</text>`;}).join('');
+    const labelStep=Math.max(1,Math.floor(n/4));
+    const xLabels=points.filter((_,i)=>i%labelStep===0||i===n-1).map(p=>{const i=points.indexOf(p);const d=new Date(p.date+'T00:00:00');return`<text x="${xPos(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8" fill="var(--text3)">${d.getDate()} ${d.toLocaleString('default',{month:'short'})}</text>`;}).join('');
+    const dots=points.map((p,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.saved).toFixed(1)}" r="5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="2" style="cursor:pointer" data-date="${p.date}" data-count="1" data-tasks="${(g.savingsCurrency||'₹')+(parseFloat(p.amount)||0).toLocaleString()}${p.note?' — '+p.note:''}" onclick="showChartTooltip(event,this)"/>`).join('');
+    return `<div style="font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:8px">💰 Savings Progress</div>
+    <div class="chart-container" id="goal-chart-wrap">
+      <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        ${gridLines}${xLabels}${yLabels}
+        <line x1="${padL}" y1="${targetY}" x2="${W-padR}" y2="${targetY}" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <text x="${W-padR-2}" y="${parseFloat(targetY)-4}" text-anchor="end" font-size="8" fill="#F59E0B">Target</text>
+        <path d="${savedPath}" fill="none" stroke="${lineColor}" stroke-width="2.5"/>
+        ${dots}
+      </svg>
+      <div class="chart-tooltip hidden" id="chart-tooltip"></div>
+    </div>
+    <div class="chart-legend">
+      <div class="chart-legend-item"><div class="chart-legend-line" style="background:${lineColor}"></div>Cumulative Saved</div>
+      <div class="chart-legend-item"><div class="chart-legend-line" style="background:#F59E0B"></div>Target</div>
+      <div style="font-size:0.7rem;color:var(--text3);width:100%">💡 Tap dots to see entry details</div>
+    </div>`;
+  }
 
-  // Group tasks by date — planned and completed
+  // All other goal types — tasks based chart
+  const tasks=g.tasks||[];
+  if(!tasks.length) return '<div style="text-align:center;padding:20px;color:var(--text3);font-size:0.85rem">No tasks yet. Add tasks to see the chart.</div>';
+
+  // For custom goals without dates, group by creation order
+  const hasDates=tasks.some(t=>t.date);
+  if(!hasDates){
+    // Show simple cumulative completion chart by task index
+    const total=tasks.length;
+    const doneCount=tasks.filter(t=>t.done).length;
+    const W=320,H=160,padL=32,padR=12,padT=16,padB=28;
+    const chartW=W-padL-padR,chartH=H-padT-padB;
+    function xPos(i){return padL+(i/Math.max(total-1,1))*chartW;}
+    function yPos(v){return padT+chartH-(v/Math.max(total,1))*chartH;}
+    const plannedPath=tasks.map((_,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(i+1).toFixed(1)}`).join(' ');
+    let cum=0;
+    const donePath=tasks.map((_,i)=>{if(tasks[i].done)cum++;return`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(cum).toFixed(1)}`;}).join(' ');
+    const gridLines=Array.from({length:5},(_,i)=>{const y=yPos(total*i/4);return`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.5"/>`;}).join('');
+    const yLabels=Array.from({length:5},(_,i)=>{const v=Math.round(total*i/4);return`<text x="${padL-4}" y="${yPos(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;}).join('');
+    return `<div style="font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:8px">📈 Task Completion</div>
+    <div class="chart-container" id="goal-chart-wrap">
+      <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        ${gridLines}${yLabels}
+        <path d="${plannedPath}" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="${donePath}" fill="none" stroke="${lineColor}" stroke-width="2.5"/>
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <div class="chart-legend-item"><div class="chart-legend-line" style="background:var(--text3);opacity:0.5"></div>Planned</div>
+      <div class="chart-legend-item"><div class="chart-legend-line" style="background:${lineColor}"></div>Completed (${doneCount}/${total})</div>
+    </div>`;
+  }
+
+  // Date-based tasks (habit / weekly)
   const dateMap={};
   tasks.forEach(t=>{
     if(!t.date)return;
@@ -1496,74 +1565,35 @@ function buildGoalLineChart(g, lineColor){
     dateMap[t.date].planned++;
     if(t.done){dateMap[t.date].done++;dateMap[t.date].doneTasks.push(t.name||t.date);}
   });
-
-  // Cumulative by date
   const dates=Object.keys(dateMap).sort();
   if(!dates.length) return '';
   let cumPlanned=0,cumDone=0;
   const points=dates.map(d=>{
     cumPlanned+=dateMap[d].planned;
     cumDone+=dateMap[d].done;
-    return {date:d,planned:cumPlanned,done:cumDone,dayDone:dateMap[d].done,doneTasks:dateMap[d].doneTasks};
+    return{date:d,planned:cumPlanned,done:cumDone,dayDone:dateMap[d].done,doneTasks:dateMap[d].doneTasks};
   });
-
-  // Only show up to today
   const today=todayISO();
   const visPoints=points.filter(p=>p.date<=today);
-
-  // SVG dimensions
   const W=320,H=160,padL=32,padR=12,padT=16,padB=28;
   const chartW=W-padL-padR,chartH=H-padT-padB;
   const maxVal=Math.max(...points.map(p=>p.planned),1);
   const n=points.length;
-
   function xPos(i){return padL+(i/(n-1||1))*chartW;}
   function yPos(v){return padT+chartH-(v/maxVal)*chartH;}
-
-  // Build planned line
   const plannedPath=points.map((p,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(p.planned).toFixed(1)}`).join(' ');
-  // Build done line (only up to today)
-  const donePath=visPoints.map((p,i)=>`${i===0?'M':'L'}${xPos(points.indexOf(p)).toFixed(1)},${yPos(p.done).toFixed(1)}`).join(' ');
-
-  // X axis labels (show ~5 evenly)
+  const donePath=visPoints.map(p=>{const i=points.indexOf(p);return`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(p.done).toFixed(1)}`;}).join(' ');
   const labelStep=Math.max(1,Math.floor(n/4));
-  const xLabels=points.filter((_,i)=>i%labelStep===0||i===n-1).map((p,_,arr)=>{
-    const i=points.indexOf(p);
-    const d=new Date(p.date+'T00:00:00');
-    const lbl=`${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`;
-    return `<text x="${xPos(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--text3)">${lbl}</text>`;
-  }).join('');
-
-  // Y axis labels
-  const ySteps=4;
-  const yLabels=Array.from({length:ySteps+1},(_,i)=>{
-    const v=Math.round(maxVal*i/ySteps);
-    return `<text x="${padL-4}" y="${yPos(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;
-  }).join('');
-
-  // Grid lines
-  const gridLines=Array.from({length:ySteps+1},(_,i)=>{
-    const y=yPos(Math.round(maxVal*i/ySteps));
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.5"/>`;
-  }).join('');
-
-  // Dots for planned
-  const plannedDots=points.map((p,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.planned).toFixed(1)}" r="3" fill="var(--text3)" stroke="var(--bg2)" stroke-width="1.5"/>`).join('');
-
-  // Dots for done (interactive — only where done>0)
+  const xLabels=points.filter((_,i)=>i%labelStep===0||i===n-1).map(p=>{const i=points.indexOf(p);const d=new Date(p.date+'T00:00:00');return`<text x="${xPos(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8" fill="var(--text3)">${d.getDate()} ${d.toLocaleString('default',{month:'short'})}</text>`;}).join('');
+  const yLabels=Array.from({length:5},(_,i)=>{const v=Math.round(maxVal*i/4);return`<text x="${padL-4}" y="${yPos(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;}).join('');
+  const gridLines=Array.from({length:5},(_,i)=>{const y=yPos(maxVal*i/4);return`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.5"/>`;}).join('');
+  const plannedDots=points.map((p,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.planned).toFixed(1)}" r="2.5" fill="var(--text3)" stroke="var(--bg2)" stroke-width="1"/>`).join('');
+  const allDoneDots=visPoints.map(p=>{const i=points.indexOf(p);return`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="2.5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="1"/>`;}).join('');
   const doneDots=visPoints.filter(p=>p.dayDone>0).map(p=>{
     const i=points.indexOf(p);
-    const safeDate=p.date;
-    const safeCount=p.dayDone;
-    const safeIdx=points.indexOf(p);
-    return `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="2" style="cursor:pointer" data-date="${safeDate}" data-count="${safeCount}" data-tasks="${p.doneTasks.map(t=>t.replace(/"/g,'&quot;')).join('||')}" onclick="showChartTooltip(event,this)"/>`;
+    return`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="2" style="cursor:pointer" data-date="${p.date}" data-count="${p.dayDone}" data-tasks="${p.doneTasks.map(t=>t.replace(/"/g,'&quot;')).join('||')}" onclick="showChartTooltip(event,this)"/>`;
   }).join('');
-
-  // All done dots (smaller, for continuity)
-  const allDoneDots=visPoints.map((p,i)=>`<circle cx="${xPos(points.indexOf(p)).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="3" fill="${lineColor}" stroke="var(--bg2)" stroke-width="1.5"/>`).join('');
-
-  return `
-  <div style="font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:8px">📈 Progress Over Time</div>
+  return `<div style="font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:8px">📈 Progress Over Time</div>
   <div class="chart-container" id="goal-chart-wrap">
     <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       ${gridLines}${xLabels}${yLabels}
