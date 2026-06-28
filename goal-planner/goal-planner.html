@@ -1123,14 +1123,21 @@ async function saveGoal(){
   renderDashboard();renderGoalsList();
 }
 
+function toLocalISO(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
 function generateHabitTasks(start,end,skip,title){
   const tasks=[];
   const s=new Date(start+'T00:00:00'),e=new Date(end+'T00:00:00');
   const cur=new Date(s);
   while(cur<=e){
-    if(!skip.includes(cur.getDay())){
-      const iso=cur.toISOString().split('T')[0];
-      tasks.push({name:title,date:iso,done:false,doneAt:null});
+    const dayOfWeek=cur.getDay();
+    if(!skip.includes(dayOfWeek)){
+      tasks.push({name:title,date:toLocalISO(cur),done:false,doneAt:null});
     }
     cur.setDate(cur.getDate()+1);
   }
@@ -1142,8 +1149,7 @@ function generateWeeklyTasks(start,end,taskName){
   const s=new Date(start+'T00:00:00'),e=new Date(end+'T00:00:00');
   let weekNum=1;const cur=new Date(s);
   while(cur<=e){
-    const iso=cur.toISOString().split('T')[0];
-    tasks.push({name:`Week ${weekNum}: ${taskName}`,date:iso,done:false,doneAt:null});
+    tasks.push({name:`Week ${weekNum}: ${taskName}`,date:toLocalISO(cur),done:false,doneAt:null});
     cur.setDate(cur.getDate()+7);weekNum++;
   }
   return tasks;
@@ -1779,7 +1785,7 @@ function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-function todayISO(){return new Date().toISOString().split('T')[0];}
+function todayISO(){return toLocalISO(new Date());}
 function formatDateShort(iso){if(!iso)return '';const d=new Date(iso.includes('T')?iso:iso+'T00:00:00');return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
 function formatDateLong(d){return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
 function formatDateLong2(iso){if(!iso)return '';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
