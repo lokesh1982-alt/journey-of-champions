@@ -1553,8 +1553,10 @@ function buildGoalLineChart(g, lineColor){
   // Dots for done (interactive — only where done>0)
   const doneDots=visPoints.filter(p=>p.dayDone>0).map(p=>{
     const i=points.indexOf(p);
-    const tasksJson=JSON.stringify(p.doneTasks).replace(/"/g,'&quot;');
-    return `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="2" style="cursor:pointer" onclick="showChartTooltip(event,'${p.date}',${p.dayDone},'${p.doneTasks.map(t=>t.replace(/'/g,'\\'')).join('|')}')"/>`;
+    const safeDate=p.date;
+    const safeCount=p.dayDone;
+    const safeIdx=points.indexOf(p);
+    return `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(p.done).toFixed(1)}" r="5" fill="${lineColor}" stroke="var(--bg2)" stroke-width="2" style="cursor:pointer" data-date="${safeDate}" data-count="${safeCount}" data-tasks="${p.doneTasks.map(t=>t.replace(/"/g,'&quot;')).join('||')}" onclick="showChartTooltip(event,this)"/>`;
   }).join('');
 
   // All done dots (smaller, for continuity)
@@ -1578,11 +1580,13 @@ function buildGoalLineChart(g, lineColor){
   </div>`;
 }
 
-function showChartTooltip(event,date,count,tasksStr){
+function showChartTooltip(event,el){
   const tooltip=document.getElementById('chart-tooltip');
   const wrap=document.getElementById('goal-chart-wrap');
   if(!tooltip||!wrap)return;
-  const tasks=tasksStr.split('|').filter(Boolean);
+  const date=el.dataset.date;
+  const count=parseInt(el.dataset.count);
+  const tasks=(el.dataset.tasks||'').split('||').filter(Boolean);
   const d=new Date(date+'T00:00:00');
   const dateLabel=d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   tooltip.innerHTML=`<div style="font-weight:700;color:var(--accent2);margin-bottom:6px">📅 ${dateLabel}</div>
